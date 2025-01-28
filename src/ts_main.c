@@ -16,8 +16,9 @@
 #include "ts_main.h"
 #include "ts_draw.h"
 #include "ts_custom.h"
+#include "apk_main.h" // android_data::prompt_blockcontrols
 
-#include "g_game.h" // players[MAXPLAYERS], promptactive, promptblockcontrols
+#include "g_game.h" // players[MAXPLAYERS], promptactive
 
 #include "m_menu.h" // M_IsCustomizingTouchControls
 #include "m_misc.h" // M_ScreenShot
@@ -94,15 +95,15 @@ consvar_t cv_touchlayout = CVAR_INIT ("touch_layout", "None", TOUCHCVARFLAGS, NU
 consvar_t cv_touchcamera = CVAR_INIT ("touch_camera", "On", TOUCHCVARFLAGS, CV_OnOff, TS_UpdateControls);
 
 static CV_PossibleValue_t touchpresetscale_cons_t[] = {{FRACUNIT/2, "MIN"}, {3 * FRACUNIT, "MAX"}, {0, NULL}};
-consvar_t cv_touchpresetscale = CVAR_INIT ("touch_guiscale", "0.75", CV_FLOAT | TOUCHCVARFLAGS | CV_SLIDER_SAFE, touchpresetscale_cons_t, TS_UpdateControls);
+consvar_t cv_touchpresetscale = CVAR_INIT ("touch_guiscale", "0.75", CV_FLOAT | TOUCHCVARFLAGS | APK_CV_SLIDER_SAFE, touchpresetscale_cons_t, TS_UpdateControls);
 consvar_t cv_touchscalemeta = CVAR_INIT ("touch_scalemeta", "Yes", TOUCHCVARFLAGS, CV_YesNo, TS_UpdateControls);
 
 static CV_PossibleValue_t touchcorners_cons_t[] = {{0, "MIN"}, {64, "MAX"}, {0, NULL}};
-consvar_t cv_touchcorners = CVAR_INIT ("touch_corners", "8", TOUCHCVARFLAGS | CV_SLIDER_SAFE, touchcorners_cons_t, TS_UpdateControls);
+consvar_t cv_touchcorners = CVAR_INIT ("touch_corners", "8", TOUCHCVARFLAGS | APK_CV_SLIDER_SAFE, touchcorners_cons_t, TS_UpdateControls);
 
 static CV_PossibleValue_t touchtrans_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
-consvar_t cv_touchtrans = CVAR_INIT ("touch_transinput", "10", CV_SAVE | CV_SLIDER_SAFE, touchtrans_cons_t, NULL);
-consvar_t cv_touchmenutrans = CVAR_INIT ("touch_transmenu", "10", CV_SAVE | CV_SLIDER_SAFE, touchtrans_cons_t, NULL);
+consvar_t cv_touchtrans = CVAR_INIT ("touch_transinput", "10", CV_SAVE | APK_CV_SLIDER_SAFE, touchtrans_cons_t, NULL);
+consvar_t cv_touchmenutrans = CVAR_INIT ("touch_transmenu", "10", CV_SAVE | APK_CV_SLIDER_SAFE, touchtrans_cons_t, NULL);
 
 static CV_PossibleValue_t touchnavmethod_cons_t[] = {{0, "Default"}, {1, "Only highlight"}, {2, "Screen regions"}, {0, NULL}};
 consvar_t cv_touchnavmethod = CVAR_INIT ("touch_navmethod", "Default", CV_SAVE, touchnavmethod_cons_t, NULL);
@@ -185,6 +186,7 @@ consvar_t cv_touchcamvertsens = CVAR_INIT ("touch_vertsens", "45", CV_SAVE, touc
 static CV_PossibleValue_t touchjoysens_cons_t[] = {{FRACUNIT/100, "MIN"}, {4 * FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_touchjoyhorzsens = CVAR_INIT ("touch_joyhorzsens", "2.0", TOUCHJOYCVARFLAGS, touchjoysens_cons_t, NULL);
 consvar_t cv_touchjoyvertsens = CVAR_INIT ("touch_joyvertsens", "2.0", TOUCHJOYCVARFLAGS, touchjoysens_cons_t, NULL);
+static CV_PossibleValue_t zerotoone_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_touchjoydeadzone = CVAR_INIT ("touch_joydeadzone", "0.125", TOUCHJOYCVARFLAGS, zerotoone_cons_t, NULL);
 
 boolean TS_IsCustomizingControls(void)
@@ -342,7 +344,7 @@ static void HandleNonPlayerControlButton(INT32 gc)
 		((moviemode) ? M_StopMovie : M_StartMovie)();
 	// Handle chasecam toggle
 	else if (gc == GC_CAMTOGGLE)
-		G_ToggleChaseCam();
+		APK_G_ToggleChaseCam(0, true);
 	// Handle talk buttons
 	else if ((gc == GC_TALKKEY || gc == GC_TEAMKEY) && netgame)
 	{
@@ -439,7 +441,7 @@ void TS_HandleFingerEvent(event_t *ev)
 				}
 
 				// Ignore disabled player controls
-				if ((!touch_useinputs || promptblockcontrols) && TS_ButtonIsPlayerControl(i))
+				if ((!touch_useinputs || android_data.prompt_blockcontrols) && TS_ButtonIsPlayerControl(i))
 					continue;
 
 				// Check if your finger touches this button.
@@ -482,7 +484,7 @@ void TS_HandleFingerEvent(event_t *ev)
 
 				if (gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE)
 					gc = GC_SPIN;
-				else if (promptblockcontrols && F_GetPromptHideHud(y / vid.dup))
+				else if (android_data.prompt_blockcontrols && F_GetPromptHideHud(y / vid.dup))
 					gc = GC_JUMP;
 
 				if (gc != GC_NULL)
@@ -1127,7 +1129,7 @@ void TS_BuildPreset(touchconfig_t *controls, touchconfigstatus_t *status,
 
 	if (status->tutorialmode && status->promptactive)
 	{
-		y = F_GetPromptHideHudBound();
+		y = android_data.prompt_hidehudbound;
 		if (y < 0)
 			promptoffs = -(y / vid.dup);
 	}
@@ -1148,7 +1150,7 @@ void TS_BuildPreset(touchconfig_t *controls, touchconfigstatus_t *status,
 		y = (16 * FRACUNIT);
 		if (status->splitscreen)
 			y /= 2;
-		topcorner = (ST_GetLivesHUDInfo()->y * FRACUNIT) + y + corneroffset;
+		topcorner = (APK_ST_GetLivesHUDInfo()->y * FRACUNIT) + y + corneroffset;
 	}
 	else
 		topcorner = corneroffset;
@@ -1400,10 +1402,10 @@ static void BuildWeaponButtons(touchconfigstatus_t *status)
 	INT32 i, wep;
 	fixed_t x, y, w, h;
 
-	x = (ST_WEAPONS_X * FRACUNIT) + (6 * FRACUNIT);
-	y = (ST_WEAPONS_Y * FRACUNIT) - (2 * FRACUNIT);
-	w = ST_WEAPONS_W * FRACUNIT;
-	h = ST_WEAPONS_H * FRACUNIT;
+	x = (APK_ST_WEAPONS_X * FRACUNIT) + (6 * FRACUNIT);
+	y = (APK_ST_WEAPONS_Y * FRACUNIT) - (2 * FRACUNIT);
+	w = APK_ST_WEAPONS_W * FRACUNIT;
+	h = APK_ST_WEAPONS_H * FRACUNIT;
 
 	wep = GC_WEPSLOT1;
 
@@ -1728,16 +1730,16 @@ void TS_DefineButtons(void)
 		status.splitscreen = splitscreen;
 		status.modeattacking = modeattacking;
 		status.canpause = ((netgame && (cv_pause.value || server || IsPlayerAdmin(consoleplayer))) || (modeattacking && demorecording));
-		status.canviewpointswitch = G_CanViewpointSwitch(false);
+		status.canviewpointswitch = APK_G_CanViewpointSwitch(false);
 		status.cantalk = (netgame && !CHAT_MUTE);
 		status.canteamtalk = (G_GametypeHasTeams() && players[consoleplayer].ctfteam);
 		status.promptactive = promptactive;
-		status.promptblockcontrols = promptblockcontrols;
+		status.promptblockcontrols = android_data.prompt_blockcontrols;
 
-		if (F_GetPromptHideHud(ST_GetLivesHUDInfo()->y))
+		if (F_GetPromptHideHud(APK_ST_GetLivesHUDInfo()->y))
 			status.altliveshud = false;
 		else
-			status.altliveshud = ST_AltLivesHUDEnabled() && (!(status.nights || status.specialstage)) && (gamestate == GS_LEVEL);
+			status.altliveshud = APK_ST_AltLivesHUDEnabled() && (!(status.nights || status.specialstage)) && (gamestate == GS_LEVEL);
 
 		if (memcmp(&status, &touchcontrolstatus, size))
 		{
@@ -1756,7 +1758,7 @@ void TS_DefineButtons(void)
 		status.vid.dupx = vid.dup;
 		status.vid.dupy = vid.dup;
 		status.preset = touch_preset;
-		status.promptblockcontrols = promptblockcontrols;
+		status.promptblockcontrols = android_data.prompt_blockcontrols;
 
 		if (memcmp(&status, &touchcontrolstatus, size))
 		{

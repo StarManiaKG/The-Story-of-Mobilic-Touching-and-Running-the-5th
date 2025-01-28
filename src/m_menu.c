@@ -50,11 +50,13 @@
 #include "f_finale.h"
 #include "lua_hook.h"
 
+// Android
 #ifdef TOUCHINPUTS
 #include "ts_main.h"
 #include "ts_draw.h"
 #include "ts_custom.h"
 #endif
+#include "apk_main.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -1678,42 +1680,45 @@ static menuitem_t OP_VideoOptionsMenu[] =
 	{IT_SUBMENU|IT_STRING, NULL, "Advanced Settings...",     &OP_ColorOptionsDef,  46},
 
 	{IT_HEADER, NULL, "Heads-Up Display", NULL, 55},
-	{IT_STRING | IT_CVAR, NULL, "Show HUD",                  &cv_showhud,         61},
+	{IT_STRING | IT_CVAR, NULL, "Show HUD",                  &cv_showhud,          61},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL, "HUD Transparency",          &cv_translucenthud,  66},
-	{IT_STRING | IT_CVAR, NULL, "Score/Time/Rings",          &cv_timetic,         71},
-	{IT_STRING | IT_CVAR, NULL, "Show Powerups",             &cv_powerupdisplay,  76},
-	{IT_STRING | IT_CVAR, NULL, "Lives HUD Position",        &cv_liveshudpos,     81},
-	{IT_STRING | IT_CVAR, NULL, "Local ping display",        &cv_showping,        86}, // shows ping next to framerate if we want to.
-	{IT_STRING | IT_CVAR, NULL, "Show player names",         &cv_seenames,        91},
+	                      NULL, "HUD Transparency",          &cv_translucenthud,   66},
+	{IT_STRING | IT_CVAR, NULL, "Score/Time/Rings",          &cv_timetic,          71},
+	{IT_STRING | IT_CVAR, NULL, "Show Powerups",             &cv_powerupdisplay,   76},
+	{IT_STRING | IT_CVAR, NULL, "Local ping display",		&cv_showping,			81}, // shows ping next to framerate if we want to.
+	{IT_STRING | IT_CVAR, NULL, "Show player names",         &cv_seenames,         86},
 
-	{IT_HEADER, NULL, "Console", NULL, 100},
-	{IT_STRING | IT_CVAR, NULL, "Background color",          &cons_backcolor,     106},
-	{IT_STRING | IT_CVAR, NULL, "Text Size",                 &cv_constextsize,    111},
+	{IT_HEADER, NULL, "Console", NULL, 95},
+	{IT_STRING | IT_CVAR, NULL, "Background color",          &cons_backcolor,      101},
+	{IT_STRING | IT_CVAR, NULL, "Text Size",                 &cv_constextsize,    106},
 
-	{IT_HEADER, NULL, "Chat", NULL, 120},
-	{IT_STRING | IT_CVAR, NULL, "Chat Mode",                        &cv_consolechat,        126},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Chat Box Width",    &cv_chatwidth,          131},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Chat Box Height",   &cv_chatheight,         136},
-	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",             &cv_chattime,           141},
-	{IT_STRING | IT_CVAR, NULL, "Chat Notifications",           	&cv_chatnotifications,  146},
-	{IT_STRING | IT_CVAR, NULL, "Spam Protection",                  &cv_chatspamprotection, 151},
-	{IT_STRING | IT_CVAR, NULL, "Chat Background Tint",           	&cv_chatbacktint,       156},
+	{IT_HEADER, NULL, "Chat", NULL, 115},
+	{IT_STRING | IT_CVAR, NULL, "Chat Mode",            		 	 &cv_consolechat,  121},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Chat Box Width",    &cv_chatwidth,     126},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Chat Box Height",   &cv_chatheight,    131},
+	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",              &cv_chattime,    136},
+	{IT_STRING | IT_CVAR, NULL, "Chat Notifications",           	 &cv_chatnotifications,  141},
+	{IT_STRING | IT_CVAR, NULL, "Spam Protection",           		 &cv_chatspamprotection,  146},
+	{IT_STRING | IT_CVAR, NULL, "Chat Background Tint",           	 &cv_chatbacktint,  151},
 
-	{IT_HEADER, NULL, "Level", NULL, 165},
-	{IT_STRING | IT_CVAR, NULL, "Draw Distance",             &cv_drawdist,        171},
-	{IT_STRING | IT_CVAR, NULL, "Weather Draw Dist.",        &cv_drawdist_precip, 176},
-	{IT_STRING | IT_CVAR, NULL, "NiGHTS Hoop Draw Dist.",    &cv_drawdist_nights, 181},
+	{IT_HEADER, NULL, "Android", NULL, 160},
+	{IT_STRING | IT_CVAR, NULL, "Lives HUD Position",        &cv_android_liveshudpos,166},
+	{IT_STRING | IT_CVAR, NULL, "Reduce Object Thinking",    &cv_android_thinkless,  171},
 
-	{IT_HEADER, NULL, "Diagnostic", NULL, 190},
-	{IT_STRING | IT_CVAR, NULL, "Show FPS",                  &cv_ticrate,         196},
-	{IT_STRING | IT_CVAR, NULL, "Clear Before Redraw",       &cv_homremoval,      201},
-	{IT_STRING | IT_CVAR, NULL, "Show \"FOCUS LOST\"",       &cv_showfocuslost,   206},
+	{IT_HEADER, NULL, "Level", NULL, 180},
+	{IT_STRING | IT_CVAR, NULL, "Draw Distance",             &cv_drawdist,        186},
+	{IT_STRING | IT_CVAR, NULL, "Weather Draw Dist.",        &cv_drawdist_precip, 191},
+	{IT_STRING | IT_CVAR, NULL, "NiGHTS Hoop Draw Dist.",    &cv_drawdist_nights, 196},
+
+	{IT_HEADER, NULL, "Diagnostic", NULL, 205},
+	{IT_STRING | IT_CVAR, NULL, "Show FPS",                  &cv_ticrate,         211},
+	{IT_STRING | IT_CVAR, NULL, "Clear Before Redraw",       &cv_homremoval,      216},
+	{IT_STRING | IT_CVAR, NULL, "Show \"FOCUS LOST\"",       &cv_showfocuslost,   221},
 
 #ifdef HWRENDER
-	{IT_HEADER, NULL, "Renderer", NULL, 215},
-	{IT_CALL | IT_STRING, NULL, "OpenGL Options...",         M_OpenGLOptionsMenu, 221},
-	{IT_STRING | IT_CVAR, NULL, "FPS Cap",                   &cv_fpscap,          226},
+	{IT_HEADER, NULL, "Renderer", NULL, 230},
+	{IT_CALL | IT_STRING, NULL, "OpenGL Options...",         M_OpenGLOptionsMenu, 236},
+	{IT_STRING | IT_CVAR, NULL, "FPS Cap",                   &cv_fpscap,          241},
 #endif
 };
 
@@ -4912,7 +4917,7 @@ static boolean M_HandleFingerDownEvent(event_t *ev)
 			finger->float_arr[0] = 0.0f;
 		}
 
-		if (cv->flags & CV_SLIDER_SAFE)
+		if (cv->flags & APK_CV_SLIDER_SAFE)
 			M_FingerSliderSetCVar(finger);
 	}
 
@@ -4950,7 +4955,7 @@ static boolean M_HandleFingerUpEvent(event_t *ev, INT32 *ch)
 	// Set the value of the CVar the finger is changing from a slider.
 	if (cv && !onMessage)
 	{
-		if (!(cv->flags & CV_SLIDER_SAFE))
+		if (!(cv->flags & APK_CV_SLIDER_SAFE))
 			M_FingerSliderSetCVar(finger);
 		selection = -1;
 	}
@@ -11745,7 +11750,7 @@ static void M_ReadSavegameInfo(UINT32 slot)
 	INT16 backwardsCompat = 0;
 #endif
 
-	length = G_ReadSaveGameSlot(savename, &savebuffer, slot);
+	length = APK_G_ReadSaveGameSlot(savename, &savebuffer, slot);
 	slot--;
 	if (length == 0)
 	{
@@ -14331,7 +14336,7 @@ static void M_MarathonLiveEventBackup(INT32 choice)
 // Going to Marathon menu...
 static void M_Marathon(INT32 choice)
 {
-	char *eventsave = G_LiveEventHasBackup();
+	char *eventsave = APK_G_LiveEventHasBackup();
 	UINT16 skinset;
 	INT32 mapnum = 0;
 

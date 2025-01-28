@@ -47,7 +47,7 @@ consvar_t cv_ticrate = CVAR_INIT ("showfps", "No", CV_SAVE, ticrate_cons_t, NULL
 
 static void CV_palette_OnChange(void);
 
-#define colorcvarflags (CV_SAVE | CV_CALL | CV_SLIDER_SAFE)
+#define colorcvarflags (CV_SAVE | CV_CALL | APK_CV_SLIDER_SAFE)
 
 static CV_PossibleValue_t gamma_cons_t[] = {{-15, "MIN"}, {5, "MAX"}, {0, NULL}};
 consvar_t cv_globalgamma = CVAR_INIT ("gamma", "0", colorcvarflags, gamma_cons_t, CV_palette_OnChange);

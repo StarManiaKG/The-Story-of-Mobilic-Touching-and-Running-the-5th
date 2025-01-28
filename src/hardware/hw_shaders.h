@@ -117,7 +117,8 @@
 	"vec2 lighttable_coord = vec2((tex_pal_idx + 0.5) / 256.0, (light_y + 0.5) / 32.0);\n" \
 	"vec4 final_color = texture2D(lighttable_tex, lighttable_coord);\n" \
 	"final_color.a = texel.a * poly_color.a;\n" \
-	"gl_FragColor = final_color;\n"
+	"gl_FragColor = final_color;\n" \
+
 #if 0
 #define GLSL_SOFTWARE_FRAGMENT_SHADER \
 	"#ifdef SRB2_PALETTE_RENDERING\n" \

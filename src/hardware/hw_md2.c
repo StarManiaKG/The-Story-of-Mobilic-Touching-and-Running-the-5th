@@ -1697,6 +1697,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 			HWD.pfnDrawModel(md2->model, frame, durs, tics, nextFrame, &p, md2->scale * xs, md2->scale * ys, flip, hflip, &Surf);
 		}
 	}
+
 	// bitten check
 	HWD.pfnSetShader(SHADER_NONE);
 

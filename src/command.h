@@ -125,7 +125,8 @@ typedef enum
                    // used on menus
 	CV_CHEAT = 2048, // Don't let this be used in multiplayer unless cheats are on.
 	CV_ALLOWLUA = 4096,/* Let this be called from Lua */
-	CV_SLIDER_SAFE = 8192, // This CVar is safe to use with a slider being changed by a touch screen.
+	// ANDROID
+	APK_CV_SLIDER_SAFE = 8192, // This CVar is safe to use with a slider being changed by a touch screen.
 } cvflags_t;
 
 typedef struct CV_PossibleValue_s

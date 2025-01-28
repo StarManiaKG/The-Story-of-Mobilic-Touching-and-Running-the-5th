@@ -12,6 +12,7 @@
 #include "ts_main.h"
 #include "ts_draw.h"
 #include "ts_custom.h"
+#include "apk_main.h"
 
 #include "doomstat.h" // paused
 #include "netcode/d_netcmd.h" // cv_playercolor
@@ -256,7 +257,7 @@ static void DrawJoystick(fixed_t dpadx, fixed_t dpady, fixed_t dpadw, fixed_t dp
 
 	float xmove = 0.0f, ymove = 0.0f;
 	fixed_t stickx, sticky;
-	joystickvector2_t *joy = &touchmovevector;
+	joystickvector2_t *joy = &android_touchmovevector;
 
 	fixed_t basescalex = FixedDiv(dpadw, cursor->width*FRACUNIT);
 	fixed_t basescaley = FixedDiv(dpadh, cursor->height*FRACUNIT);

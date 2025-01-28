@@ -16,6 +16,10 @@ add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
 	g_demo.c
 	g_game.c
 	g_input.c
+	apk_main.c
+	ts_main.c
+	ts_draw.c
+	ts_custom.c
 	am_map.c
 	command.c
 	console.c
