@@ -46,6 +46,7 @@
         android:isGame="true"
         android:allowBackup="true"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+        android:allowAudioPlaybackCapture="true"
         android:hardwareAccelerated="true" >
 
         <activity android:name="SRB2Game"
