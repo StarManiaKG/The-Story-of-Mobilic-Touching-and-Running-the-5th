@@ -1,7 +1,7 @@
 // SONIC ROBO BLAST 2
 //-----------------------------------------------------------------------------
 // Copyright (C) 1998-2021 by Sonic Team Junior.
-// Copyright (C) 2020-2021 by Jaime Ita Passos.
+// Copyright (C) 2020-2023 by SRB2 Mobile Project.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -370,6 +370,7 @@ extern PFNglDeleteBuffers pglDeleteBuffers;
 typedef void (R_GL_APIENTRY * PFNglBlendEquation) (GLenum mode);
 extern PFNglBlendEquation pglBlendEquation;
 
+#ifdef HAVE_GL_FRAMEBUFFER
 /* 3.0 functions for framebuffers and renderbuffers */
 typedef void (R_GL_APIENTRY * PFNglGenFramebuffers) (GLsizei n, GLuint *ids);
 extern PFNglGenFramebuffers pglGenFramebuffers;
@@ -391,11 +392,13 @@ typedef void (R_GL_APIENTRY * PFNglRenderbufferStorage) (GLenum target, GLenum i
 extern PFNglRenderbufferStorage pglRenderbufferStorage;
 typedef void (R_GL_APIENTRY * PFNglFramebufferRenderbuffer) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLenum renderbuffer);
 extern PFNglFramebufferRenderbuffer pglFramebufferRenderbuffer;
+#endif
 
 // ==========================================================================
 //                                                                  FUNCTIONS
 // ==========================================================================
 
+#ifdef HAVE_GL_FRAMEBUFFER
 void GLFramebuffer_Generate(void);
 void GLFramebuffer_Delete(void);
 
@@ -406,14 +409,17 @@ void GLFramebuffer_Enable(void);
 void GLFramebuffer_Disable(void);
 
 void GLFramebuffer_SetDepth(INT32 depth);
+#endif
 
 void GLModel_GenerateVBOs(model_t *model);
 void GLModel_ClearVBOs(model_t *model);
+void GLModel_DeleteVBOs(model_t *model);
 
 void GLModel_AllocLerpBuffer(size_t size);
 void GLModel_AllocLerpTinyBuffer(size_t size);
 
 void  GLTexture_AllocBuffer(GLMipmap_t *pTexInfo);
+void  GLTexture_Disable(void);
 void  GLTexture_Flush(void);
 void  GLTexture_FlushScreen(void);
 void  GLTexture_SetFilterMode(INT32 mode);
@@ -421,7 +427,8 @@ INT32 GLTexture_GetMemoryUsage(FTextureInfo *head);
 
 boolean GLBackend_Init(void);
 boolean GLBackend_InitContext(void);
-void    GLBackend_RecreateContext(void);
+void    GLBackend_DeleteModelData(void);
+void    GLBackend_SetPalette(RGBA_t *palette);
 
 boolean GLBackend_LoadFunctions(void);
 boolean GLBackend_LoadExtraFunctions(void);
@@ -447,30 +454,27 @@ INT32 GLBackend_GetAlphaTestShader(INT32 type);
 INT32 GLBackend_InvertAlphaTestShader(INT32 type);
 
 void GLBackend_ReadRect(INT32 x, INT32 y, INT32 width, INT32 height, INT32 dst_stride, UINT16 *dst_data);
-void GLBackend_ReadRectRGBA(INT32 x, INT32 y, INT32 width, INT32 height, UINT32 *dst_data);
+
+void GLBackend_SetSurface(INT32 w, INT32 h);
+void GLBackend_SetBlend(FBITFIELD PolyFlags);
+void GLBackend_SetModelView(INT32 w, INT32 h);
+void GLBackend_SetStates(void);
+void GLBackend_SetBlendingStates(FBITFIELD PolyFlags);
+void GLBackend_SetNoTexture(void);
+void GLBackend_SetClamp(GLenum pname);
 
 void    GLExtension_Init(void);
 boolean GLExtension_Available(const char *extension);
 boolean GLExtension_LoadFunctions(void);
 
-void SetSurface(INT32 w, INT32 h);
-void SetModelView(GLint w, GLint h);
-void SetStates(void);
-void SetBlendingStates(FBITFIELD PolyFlags);
-void SetNoTexture(void);
-void SetClamp(GLenum pname);
-
 // ==========================================================================
 //                                                                  CONSTANTS
 // ==========================================================================
-
-extern GLuint NOTEXTURE_NUM;
 
 #define N_PI_DEMI               (M_PIl/2.0f)
 #define ASPECT_RATIO            (1.0f)
 
 #define FAR_CLIPPING_PLANE      32768.0f // Draw further! Tails 01-21-2001
-extern float NEAR_CLIPPING_PLANE;
 
 #define NULL_VBO_VERTEX ((gl_skyvertex_t*)NULL)
 #define sky_vbo_x (GLExtension_vertex_buffer_object ? &NULL_VBO_VERTEX->x : &sky->data[0].x)
@@ -495,9 +499,6 @@ extern float NEAR_CLIPPING_PLANE;
 #endif
 #ifndef GL_TEXTURE1
 #define GL_TEXTURE1 0x84C1
-#endif
-#ifndef GL_TEXTURE2
-#define GL_TEXTURE2 0x84C2
 #endif
 
 /* 1.5 Parms */
@@ -567,6 +568,7 @@ struct GLRGBAFloat
 };
 typedef struct GLRGBAFloat GLRGBAFloat;
 
+// StarManiaKG: easy android accessibility
 // lighttable list item
 struct LTListItem
 {
@@ -611,6 +613,8 @@ extern float alpha_threshold;
 
 extern boolean model_lighting;
 
+extern float near_clipping_plane;
+
 extern FTextureInfo *TexCacheTail;
 extern FTextureInfo *TexCacheHead;
 
@@ -618,18 +622,22 @@ extern GLuint    tex_downloaded;
 extern GLfloat   fov;
 extern FBITFIELD CurrentPolyFlags;
 
+// StarManiaKG: easy android accessibility
 extern GLuint screenTextures[NUMSCREENTEXTURES];
+
 extern GLuint screentexture;
 extern GLuint startScreenWipe;
 extern GLuint endScreenWipe;
 extern GLuint finalScreenTexture;
 
+#ifdef HAVE_GL_FRAMEBUFFER
 extern GLuint FramebufferObject, FramebufferTexture;
 extern GLuint RenderbufferObject, RenderbufferDepthBits;
 extern GLboolean FramebufferEnabled, RenderToFramebuffer;
 
 #define NumRenderbufferFormats 5
 extern GLenum RenderbufferFormats[NumRenderbufferFormats];
+#endif
 
 extern float *vertBuffer;
 extern float *normBuffer;
@@ -655,7 +663,9 @@ extern boolean GLExtension_vertex_buffer_object;
 extern boolean GLExtension_texture_filter_anisotropic;
 extern boolean GLExtension_vertex_program;
 extern boolean GLExtension_fragment_program;
+#ifdef HAVE_GL_FRAMEBUFFER
 extern boolean GLExtension_framebuffer_object;
+#endif
 extern boolean GLExtension_shaders;
 
 #endif // _R_GLCOMMON_H_

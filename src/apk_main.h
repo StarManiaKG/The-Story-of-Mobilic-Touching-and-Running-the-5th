@@ -16,6 +16,12 @@
 #include "command.h"
 #include "g_input.h"
 #include "st_stuff.h"
+#include "w_wad.h"
+
+#ifdef SPLASH_SCREEN
+#include <SDL.h>
+#include "sdl/sdlmain.h"
+#endif
 
 #define APK_ST_WEAPONS_X ((BASEVIDWIDTH / 2) - (NUM_WEAPONS * 10) - 6)
 #define APK_ST_WEAPONS_Y 176 // HUD_LIVES
@@ -32,6 +38,14 @@ extern struct android_data_s
 	fixed_t prompt_hidehudbound;
 } android_data;
 
+#ifdef SPLASH_SCREEN
+struct SDLSplashScreen
+{
+	SDL_bool displaying;
+	UINT32   *image;
+};
+#endif
+
 extern consvar_t cv_android_liveshudpos; // lives HUD position
 extern consvar_t cv_android_thinkless;
 
@@ -43,6 +57,9 @@ extern joystickvector2_t android_touchmovevector;
 #ifdef ACCELEROMETER
 extern joystickvector2_t android_accelmovevector;
 #endif
+
+// Returns the longest PossibleValue string for this CVar
+const char *APK_CV_LongestPossibleValue(consvar_t *var);
 
 size_t APK_G_ReadSaveGameSlot(char *savename, UINT8 **buffer, UINT32 slot);
 char *APK_G_LiveEventHasBackup(void);
@@ -58,5 +75,27 @@ boolean APK_P_ReduceMobjThinking(mobj_t *mobj);
 boolean APK_ST_UseAltLivesHUD(void);
 hudinfo_t *APK_ST_GetLivesHUDInfo(void);
 boolean APK_ST_AltLivesHUDEnabled(void);
+
+char *APK_M_FindFile(const char *filename);
+
+// Loads a wadfile, but doesn't add it to the active wad files.
+wadfile_t *APK_W_LoadResourceFile(const char *filename, fhandletype_t handletype);
+// Deletes a wadfile.
+void APK_W_DeleteResourceFile(wadfile_t *wad);
+
+UINT16 APK_Resource_CheckNumForName(wadfile_t *wad, const char *name);
+void *APK_Resource_CacheLumpNum(wadfile_t *wad, UINT16 lump, INT32 tag);
+void *APK_Resource_CacheLumpName(wadfile_t *wad, const char *name, INT32 tag);
+boolean APK_Resource_LumpExists(wadfile_t *wad, const char *name);
+size_t APK_Resource_LumpLength(wadfile_t *wad, UINT16 lump);
+size_t APK_Resource_ReadLumpHeader(wadfile_t *wad, UINT16 lump, void *dest, size_t size, size_t offset);
+
+/**	\brief Show the splash screen
+*/
+void APK_I_ShowSplashScreen(void);
+
+/**	\brief Hide the splash screen
+*/
+void APK_I_HideSplashScreen(void);
 
 #endif // __APK_MAIN__

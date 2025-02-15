@@ -442,6 +442,7 @@
     <None Include="SDL_icon.xpm" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\apk_m_textreader.c" />
     <ClCompile Include="..\am_map.c" />
     <ClCompile Include="..\apng.c" />
     <ClCompile Include="..\blua\lapi.c" />

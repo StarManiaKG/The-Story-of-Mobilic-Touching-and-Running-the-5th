@@ -20,6 +20,14 @@
 #include "../u_list.h"
 #include <string.h>
 
+// Android
+#include "../apk_main.h"
+
+#define USE_HWDRV
+#ifdef USE_HWDRV
+#include "hw_drv.h" // Needed for HWD
+#endif
+
 static float PI = (3.1415926535897932384626433832795f);
 static float U_Deg2Rad(float deg)
 {
@@ -56,6 +64,9 @@ void VectorRotate(vector_t *rotVec, const vector_t *axisVec, float angle)
 
 void UnloadModel(model_t *model)
 {
+	if (!model)
+		return;
+
 	// Wouldn't it be great if C just had destructors?
 	int i;
 	for (i = 0; i < model->numMeshes; i++)
@@ -106,6 +117,9 @@ void UnloadModel(model_t *model)
 		if (mesh->uvs)
 			Z_Free(mesh->uvs);
 
+		if (mesh->originaluvs != mesh->uvs)
+			Z_Free(mesh->originaluvs);
+
 		if (mesh->lightuvs)
 			Z_Free(mesh->lightuvs);
 	}
@@ -118,6 +132,11 @@ void UnloadModel(model_t *model)
 
 	if (model->materials)
 		Z_Free(model->materials);
+
+#ifdef USE_HWDRV
+	// STAR NOTE: hi modeling stuff
+	HWD.pfnDeleteModelVBOs(model);
+#endif
 
 	DeleteVBOs(model);
 	Z_Free(model);
@@ -140,14 +159,24 @@ tag_t *GetTagByName(model_t *model, char *name, int frame)
 	return NULL;
 }
 
+enum
+{
+	MODEL_TYPE_MD3,
+	MODEL_TYPE_MD3S,
+	MODEL_TYPE_MD2,
+	MODEL_TYPE_MD2S
+};
+
 //
 // LoadModel
 //
 // Load a model and convert it to the internal format.
 //
-model_t *LoadModel(const char *filename, int ztag)
+model_t *LoadModel(const char *filename, int ztag, wadfile_t *wadfile)
 {
 	model_t *model;
+	char *buffer = NULL;
+	int type;
 
 	// What type of file?
 	const char *extension = NULL;
@@ -169,29 +198,60 @@ model_t *LoadModel(const char *filename, int ztag)
 
 	if (!strcmp(extension, ".md3"))
 	{
-		if (!(model = MD3_LoadModel(filename, ztag, false)))
-			return NULL;
+		type = MODEL_TYPE_MD3;
 	}
 	else if (!strcmp(extension, ".md3s")) // MD3 that will be converted in memory to use full floats
 	{
-		if (!(model = MD3_LoadModel(filename, ztag, true)))
-			return NULL;
+		type = MODEL_TYPE_MD3S;
 	}
 	else if (!strcmp(extension, ".md2"))
 	{
-		if (!(model = MD2_LoadModel(filename, ztag, false)))
-			return NULL;
+		type = MODEL_TYPE_MD2;
 	}
 	else if (!strcmp(extension, ".md2s"))
 	{
-		if (!(model = MD2_LoadModel(filename, ztag, true)))
-			return NULL;
+		type = MODEL_TYPE_MD2S;
 	}
 	else
 	{
 		CONS_Printf("Unknown model format: %s\n", extension);
 		return NULL;
 	}
+
+	if (wadfile)
+	{
+		if (APK_Resource_LumpExists(wadfile, filename))
+			buffer = APK_Resource_CacheLumpName(wadfile, filename, PU_STATIC);
+	}
+	else
+	{
+		FILE *f = File_Open(filename, "rb", FILEHANDLE_SDL);
+		if (!f)
+			return NULL;
+
+		// find length of file
+		size_t fileLen = File_Size(f);
+
+		// read in file
+		buffer = ZZ_Alloc(fileLen);
+		File_Read(buffer, fileLen, 1, f);
+		File_Close(f);
+	}
+
+	if (type == MODEL_TYPE_MD3 || type == MODEL_TYPE_MD3S)
+	{
+		if (!(model = MD3_LoadModel(buffer, ztag, type == MODEL_TYPE_MD3S)))
+			return NULL;
+	}
+	else if (type == MODEL_TYPE_MD2 || type == MODEL_TYPE_MD2S)
+	{
+		if (!(model = MD2_LoadModel(buffer, ztag, type == MODEL_TYPE_MD2S)))
+			return NULL;
+	}
+	else
+		return NULL;
+
+	Z_Free(buffer);
 
 	Optimize(model);
 	GeneratePolygonNormals(model, ztag);
@@ -235,7 +295,9 @@ void HWR_ReloadModels(void)
 {
 	size_t i;
 
+#if 0
 	HWR_LoadModels();
+#endif
 
 	for (i = 0; i < md2_numplayermodels; i++)
 	{
@@ -730,7 +792,7 @@ static void Reload(void)
 void DeleteVBOs(model_t *model)
 {
 	(void)model;
-	for (int i = 0; i < model->numMeshes; i++)
+/*	for (int i = 0; i < model->numMeshes; i++)
 	{
 		mesh_t *mesh = &model->meshes[i];
 
@@ -756,5 +818,5 @@ void DeleteVBOs(model_t *model)
 				frame->vboID = 0;
 			}
 		}
-	}
+	}*/
 }

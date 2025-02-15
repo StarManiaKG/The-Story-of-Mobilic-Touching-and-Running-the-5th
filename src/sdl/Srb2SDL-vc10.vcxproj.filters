@@ -55,8 +55,14 @@
     <Filter Include="SDLApp">
       <UniqueIdentifier>{3ae8d323-3eeb-47ab-8c28-b891616db1b4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Android_APK">
+      <UniqueIdentifier>{21b21naj-ndj2-2nd1-dn22-jdsdkpdsp2jd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\apk_m_textreader.c">
+      <Filter>Android_APK</Filter>
+    </ClCompile>
     <ClInclude Include="..\p5prof.h">
       <Filter>A_Asm</Filter>
     </ClInclude>

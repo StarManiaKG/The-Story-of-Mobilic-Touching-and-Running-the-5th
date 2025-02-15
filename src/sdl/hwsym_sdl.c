@@ -47,11 +47,11 @@
 #include "../hardware/hw_drv.h"
 #include "ogl_sdl.h"
 #ifdef STATIC_OPENGL
-#if defined(__ANDROID__)
-#include "../hardware/r_gles/r_gles.h"
-#else
-#include "../hardware/r_opengl/r_opengl.h"
-#endif
+	#if defined(__ANDROID__)
+		#include "../hardware/r_gles/r_gles.h"
+	#else
+		#include "../hardware/r_opengl/r_opengl.h"
+	#endif
 #endif
 #endif
 
@@ -82,10 +82,8 @@ void *hwSym(const char *funcName,void *handle)
 		funcPointer = &OglSdlSetPalette;
 
 	GETFUNC(Init);
-	GETFUNC(RecreateContext);
 	GETFUNC(Draw2DLine);
 	GETFUNC(DrawPolygon);
-	GETFUNC(DrawPolygonShader);
 	GETFUNC(DrawIndexedTriangles);
 	GETFUNC(RenderSkyDome);
 	GETFUNC(SetBlend);
@@ -106,6 +104,7 @@ void *hwSym(const char *funcName,void *handle)
 	GETFUNC(DoScreenWipe);
 	GETFUNC(DrawScreenTexture);
 	GETFUNC(MakeScreenTexture);
+	GETFUNC(DrawScreenFinalTexture);
 
 	GETFUNC(InitShaders);
 	GETFUNC(LoadShader);
@@ -120,6 +119,12 @@ void *hwSym(const char *funcName,void *handle)
 	GETFUNC(UpdateLightTable);
 	GETFUNC(ClearLightTables);
 	GETFUNC(SetScreenPalette);
+
+#if 1
+	// STAR NOTE: hi extended model rendering
+	GETFUNC(DeleteModelVBOs);
+	GETFUNC(DeleteModelData);
+#endif
 
 #else //HWRENDER
 	if (0 == strcmp("FinishUpdate", funcName))

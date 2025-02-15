@@ -61,17 +61,27 @@ typedef int (*PFNGLXSWAPINTERVALPROC) (int);
 PFNGLXSWAPINTERVALPROC glXSwapIntervalSGIEXT = NULL;
 #endif
 
+#ifndef STATIC_OPENGL
+PFNglClear pglClear;
+PFNglGetIntegerv pglGetIntegerv;
+PFNglGetString pglGetString;
+#endif
+
 /**	\brief SDL video display surface
 */
-<<<<<<< HEAD
-void *GLUhandle = NULL;
-=======
 INT32 oglflags = 0;
->>>>>>> 7b6bf976646e44f6fa4ed92700770b64dfcdcfbc
+void *GLUhandle = NULL;
 SDL_GLContext sdlglcontext = 0;
 
 void *GLBackend_GetFunction(const char *proc)
 {
+	if (strncmp(proc, "glu", 3) == 0)
+	{
+		if (GLUhandle)
+			return hwSym(proc, GLUhandle);
+		else
+			return NULL;
+	}
 	return SDL_GL_GetProcAddress(proc);
 }
 
@@ -79,6 +89,7 @@ boolean GLBackend_Init(void)
 {
 #ifndef STATIC_OPENGL
 	const char *OGLLibname = NULL;
+	const char *GLULibname = NULL;
 
 	if (M_CheckParm("-OGLlib") && M_IsNextParm())
 		OGLLibname = M_GetNextParm();
@@ -91,7 +102,6 @@ boolean GLBackend_Init(void)
 			CONS_Printf("If you know what is the OpenGL library's name, use -OGLlib\n");
 		return 0;
 	}
-<<<<<<< HEAD
 
 #if 0
 	GLULibname = "/proc/self/exe";
@@ -129,8 +139,6 @@ boolean GLBackend_Init(void)
 		CONS_Alert(CONS_ERROR, "Could not load GLU Library\n");
 		CONS_Alert(CONS_ERROR, "If you know what is the GLU library's name, use -GLUlib\n");
 	}
-=======
->>>>>>> 7b6bf976646e44f6fa4ed92700770b64dfcdcfbc
 #endif
 	return GLBackend_LoadFunctions();
 }
@@ -146,11 +154,7 @@ boolean GLBackend_Init(void)
 boolean OglSdlSurface(INT32 w, INT32 h)
 {
 	INT32 cbpp = cv_scr_depth.value < 16 ? 16 : cv_scr_depth.value;
-<<<<<<< HEAD
-=======
 	static boolean first_init = false;
-	static int majorGL = 0, minorGL = 0;
->>>>>>> 7b6bf976646e44f6fa4ed92700770b64dfcdcfbc
 
 	if (!GLBackend_InitContext())
 		return false;
@@ -158,9 +162,14 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	if (!GLBackend_LoadExtraFunctions())
 		return false;
 
-<<<<<<< HEAD
-	SetSurface(w, h);
-=======
+	oglflags = 0;
+
+	if (!first_init)
+	{
+		gl_version = pglGetString(GL_VERSION);
+		gl_renderer = pglGetString(GL_RENDERER);
+		gl_extensions = pglGetString(GL_EXTENSIONS);
+
 		GL_DBG_Printf("OpenGL %s\n", gl_version);
 		GL_DBG_Printf("GPU: %s\n", gl_renderer);
 		GL_DBG_Printf("Extensions: %s\n", gl_extensions);
@@ -186,18 +195,15 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	else
 		maximumAnisotropy = 1;
 
-	if (sscanf((const char*)gl_version, "%d.%d", &majorGL, &minorGL)
-		&& (!(majorGL == 1 && minorGL <= 3)))
-		supportMipMap = true;
-	else
-		supportMipMap = false;
-
 	SetupGLFunc4();
->>>>>>> 7b6bf976646e44f6fa4ed92700770b64dfcdcfbc
 
 	glanisotropicmode_cons_t[1].value = maximumAnisotropy;
 
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+
+	GLBackend_SetModelView(w, h);
+	GLBackend_SetStates();
+	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
 	HWR_Startup();
 	textureformatGL = cbpp > 16 ? GL_RGBA : GL_RGB5_A1;
@@ -213,15 +219,19 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 */
 void OglSdlFinishUpdate(boolean waitvbl)
 {
-	int sdlw, sdlh;
-
 	static boolean oldwaitvbl = false;
+	int sdlw, sdlh;
 	if (oldwaitvbl != waitvbl)
+	{
 		SDL_GL_SetSwapInterval(waitvbl ? 1 : 0);
+	}
 
 	oldwaitvbl = waitvbl;
 
 	SDL_GetWindowSize(window, &sdlw, &sdlh);
+
+#if 0
+#ifdef HAVE_GL_FRAMEBUFFER
 	MakeFinalScreenTexture();
 
 	GLFramebuffer_Disable();
@@ -231,8 +241,14 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	if (RenderToFramebuffer)
 		GLFramebuffer_Enable();
-
+#endif
+#else
+	// STAR NOTE: hi opengl sdl rendering system
+	HWR_MakeScreenFinalTexture();
+	HWR_DrawScreenFinalTexture(sdlw, sdlh);
 	SDL_GL_SwapWindow(window);
+#endif
+
 	GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE);
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that

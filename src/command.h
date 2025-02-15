@@ -220,9 +220,6 @@ void CV_StealthSet(consvar_t *var, const char *value);
 // it a setvalue but with a modulo at the maximum
 void CV_AddValue(consvar_t *var, INT32 increment);
 
-// Returns the longest PossibleValue string for this CVar
-const char *CV_LongestPossibleValue(consvar_t *var);
-
 // write all CV_SAVE variables to config file
 void CV_SaveVariables(FILE *f);
 

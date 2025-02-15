@@ -158,7 +158,6 @@ enum
 	SHADER_FADEMASK, SHADER_FADEMASK_ADDITIVEANDSUBTRACTIVE,
 #endif
 
-	// is bitten fucked? yes
 	NUMSHADERTARGETS
 };
 #define NUMBASESHADERS NUMSHADERTARGETS
@@ -173,7 +172,6 @@ typedef struct
 	char *vertex;
 	char *fragment;
 } shadersource_t;
-
 
 // Custom shader reference table
 typedef struct

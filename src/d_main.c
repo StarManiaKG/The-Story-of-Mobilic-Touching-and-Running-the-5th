@@ -80,11 +80,6 @@
 #include "config.h.in"
 #endif
 
-#ifdef TOUCHINPUTS
-#include "ts_custom.h"
-#include "ts_draw.h"
-#endif
-
 #ifdef HWRENDER
 #include "hardware/hw_main.h" // 3D View Rendering
 #endif
@@ -98,6 +93,13 @@
 #endif
 
 #include "lua_script.h"
+
+// Android
+#ifdef TOUCHINPUTS
+#include "ts_custom.h"
+#include "ts_draw.h"
+#endif
+#include "apk_main.h"
 
 #ifdef LOGMESSAGES
 FILE *logstream = NULL;
@@ -1226,7 +1228,6 @@ static void IdentifyVersion(void)
 
 #if defined(__ANDROID__)
 	fhandletype_t handletype = FILEHANDLE_SDL;
-	D_SetupHome();
 #else
 	char *srb2wad;
 	fhandletype_t handletype = FILEHANDLE_STANDARD;
@@ -1269,7 +1270,7 @@ static void IdentifyVersion(void)
 	configfile[sizeof configfile - 1] = '\0';
 
 	// Commercial.
-	srb2wad = malloc(strlen(srb2waddir)+1+8+1);
+	srb2wad = malloc(strlen(srb2waddir)+1+strlen(basepk3)+1);
 	if (srb2wad == NULL)
 		I_Error("No more free memory to look in %s", srb2waddir);
 	else
@@ -1403,6 +1404,10 @@ void D_SRB2Main(void)
 	ChangeDirForUrlHandler();
 #endif
 
+#if defined(__ANDROID__)
+	D_SetupHome();
+#endif
+
 	// identify the main IWAD file to use
 	IdentifyVersion();
 
@@ -1502,6 +1507,11 @@ void D_SRB2Main(void)
 
 	// Make backups of some SOCcable tables.
 	P_BackupTables();
+
+#ifdef SPLASH_SCREEN
+	// Android: Show a neat little splash screen!
+	APK_I_ShowSplashScreen();
+#endif
 
 	mainwads = 3; // doesn't include music.pk3
 #ifdef USE_PATCH_DTA
@@ -1696,6 +1706,11 @@ void D_SRB2Main(void)
 		GetMODVersion_Console();
 #endif
 	}
+
+#ifdef SPLASH_SCREEN
+	// Android: Hide our Splash Screen now!
+	APK_I_HideSplashScreen();
+#endif
 
 	// init all NETWORK
 	CONS_Printf("D_CheckNetGame(): Checking network game status.\n");
@@ -1955,7 +1970,7 @@ static void FindUsableStorageLocation(char *dest, size_t destsize, char *path, c
 
 static void D_AndroidSetupHome(const char *userhome)
 {
-	const char *homelist[3] = {0, 0, 0};
+	const char *homelist[3] = { NULL, NULL, NULL };
 	INT32 next = 0;
 
 	strlcpy(srb2home, userhome, sizeof(srb2home));
@@ -2085,10 +2100,10 @@ static int cmp_strlen_desc(const void *A, const void *B)
 
 boolean D_IsPathAllowed(const char *path)
 {
-	char *paths[] = {
+	const char *paths[] = {
 		srb2home,
 		srb2path,
-		cv_addons_folder.zstring
+		cv_addons_folder.string
 	};
 
 	const size_t n_paths = sizeof paths / sizeof *paths;
@@ -2135,4 +2150,3 @@ boolean D_CheckPathAllowed(const char *path, const char *why)
 
 	return true;
 }
-

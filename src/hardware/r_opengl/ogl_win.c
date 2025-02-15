@@ -116,7 +116,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, // handle to DLL module
 #define pwglDeleteContext wglDeleteContext;
 #define pwglMakeCurrent wglMakeCurrent;
 #else
-static HMODULE OGL32;
+static HMODULE OGL32, GLU32;
 typedef void *(WINAPI *PFNwglGetProcAddress) (const char *);
 static PFNwglGetProcAddress pwglGetProcAddress;
 typedef HGLRC (WINAPI *PFNwglCreateContext) (HDC hdc);
@@ -131,6 +131,13 @@ static PFNwglMakeCurrent pwglMakeCurrent;
 void *GLBackend_GetFunction(const char *proc)
 {
 	void *func = NULL;
+	if (strncmp(proc, "glu", 3) == 0)
+	{
+		if (GLU32)
+			func = GetProcAddress(GLU32, proc);
+		else
+			return NULL;
+	}
 	if (pwglGetProcAddress)
 		func = pwglGetProcAddress(proc);
 	if (!func)
@@ -147,19 +154,12 @@ boolean GLBackend_Init(void)
 	if (!OGL32)
 		return 0;
 
-<<<<<<< HEAD
 	GLU32 = LoadLibrary("GLU32.DLL");
 
 	pwglGetProcAddress = GLBackend_GetFunction("wglGetProcAddress");
 	pwglCreateContext = GLBackend_GetFunction("wglCreateContext");
 	pwglDeleteContext = GLBackend_GetFunction("wglDeleteContext");
 	pwglMakeCurrent = GLBackend_GetFunction("wglMakeCurrent");
-=======
-	pwglGetProcAddress = GetGLFunc("wglGetProcAddress");
-	pwglCreateContext = GetGLFunc("wglCreateContext");
-	pwglDeleteContext = GetGLFunc("wglDeleteContext");
-	pwglMakeCurrent = GetGLFunc("wglMakeCurrent");
->>>>>>> 7b6bf976646e44f6fa4ed92700770b64dfcdcfbc
 #endif
 
 	return GLBackend_LoadFunctions();
@@ -362,8 +362,8 @@ static INT32 WINAPI SetRes(viddef_t *lvid, vmode_t *pcurrentmode)
 	else
 		textureformatGL = GL_RGB5_A1;
 
-	SetModelView(lvid->width, lvid->height);
-	SetStates();
+	GLBackend_SetModelView(lvid->width, lvid->height);
+	GLBackend_SetStates();
 	// we need to clear the depth buffer. Very important!!!
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
@@ -523,6 +523,7 @@ EXPORT void HWRAPI(Shutdown) (void)
 		ReleaseDC(hWnd, hDC);
 		hDC = NULL;
 	}
+	FreeLibrary(GLU32);
 	FreeLibrary(OGL32);
 	GL_DBG_Printf ("HWRAPI Shutdown(DONE)\n");
 }

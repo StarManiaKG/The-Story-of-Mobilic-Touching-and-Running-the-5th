@@ -1803,9 +1803,11 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING|IT_CVAR,         NULL, "Anisotropic",          &cv_glanisotropicmode,    62},
 	{IT_STRING|IT_CVAR,         NULL, "Bit depth",            &cv_scr_depth,            67},
 
+#ifdef HAVE_GL_FRAMEBUFFER
 	{IT_HEADER, NULL, "Framebuffer", NULL, 77},
 	{IT_STRING|IT_CVAR,         NULL, "Framebuffer objects",  &cv_glframebuffer,        83},
 	{IT_STRING|IT_CVAR,         NULL, "Depth buffer quality", &cv_glrenderbufferdepth,  88},
+#endif
 
 #ifdef ALAM_LIGHTING
 	{IT_SUBMENU|IT_STRING,      NULL, "Lighting...",          &OP_OpenGLLightingDef,    92},
@@ -4144,7 +4146,7 @@ static const char *M_CVarLongestValue(consvar_t *var)
 {
 #ifdef TOUCHINPUTS
 	if (M_TouchInput() && var->PossibleValue)
-		return CV_LongestPossibleValue(var);
+		return APK_CV_LongestPossibleValue(var);
 #endif
 
 	return var->string;

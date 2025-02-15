@@ -67,7 +67,7 @@ typedef enum
 	gluniform_palette_lookup_tex, // 3d texture containing the rgb->index lookup table
 	gluniform_lighttable_tex, // 2d texture containing a light table
 
-	// misc
+	// misc.
 #ifdef HAVE_GLES2
 	gluniform_alphatest,
 	gluniform_alphathreshold,
@@ -112,7 +112,8 @@ typedef struct gl_shader_s
 } gl_shader_t;
 
 extern gl_shader_t gl_shaders[HWR_MAXSHADERS];
-//extern gl_shader_t gl_fallback_shader; // where did this come from????? -bitten
+extern gl_shader_t gl_usershaders[HWR_MAXSHADERS];
+extern shadersource_t gl_customshaders[HWR_MAXSHADERS];
 
 // 09102020
 typedef struct gl_shaderstate_s
@@ -132,10 +133,10 @@ void Shader_UnSet(void);
 void Shader_SetTransform(void);
 #endif
 
-void Shader_LoadCustom(int number, char *code, size_t size, boolean isfragment);
+void Shader_Load(int slot, char *code, hwdshaderstage_t stage);
 
 boolean Shader_Compile(void);
-void Shader_Clean(void);
+boolean Shader_CompileProgram(gl_shader_t *shader, GLint i);
 void Shader_CleanPrograms(void);
 
 void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade);

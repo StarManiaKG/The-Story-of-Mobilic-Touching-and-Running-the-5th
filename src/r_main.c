@@ -956,6 +956,22 @@ void R_ExecuteSetViewSize(void)
 fixed_t R_GetPlayerFov(player_t *player)
 {
 	fixed_t fov = cv_fov.value + player->fovadd;
+#ifdef NATIVESCREENRES
+#if 1
+	if (cv_nativeres.value && cv_nativeresfov.value)
+	{
+		fixed_t resmul = FloatToFixed(((float)vid.width / (float)vid.height));
+		fov = atan(tan(fov*M_PI/360)*(resmul*0.7))*360/M_PI;
+	}
+#else
+	if (cv_nativeres.value && cv_nativeresfov.value)
+	{
+		fixed_t resmul = FixedDiv(vid.width * FRACUNIT, vid.height * FRACUNIT);
+		if (resmul > FRACUNIT)
+			fovtan = FixedMul(fovtan, (7*resmul/10));
+	}
+#endif
+#endif
 	return max(MINFOV*FRACUNIT, min(fov, MAXFOV*FRACUNIT));
 }
 
@@ -1659,8 +1675,8 @@ void R_RegisterEngineStuff(void)
 	if (dedicated)
 		return;
 
-#ifdef MOBILE_PLATFORM // Override CVARs
-	// Change the default draw distance
+#ifdef MOBILE_PLATFORM // Android: Override CVARs //
+	// Android: Change the default draw distance
 	cv_drawdist.defaultvalue = "4096";
 #endif
 
@@ -1669,8 +1685,6 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_drawdist);
 	CV_RegisterVar(&cv_drawdist_nights);
 	CV_RegisterVar(&cv_drawdist_precip);
-
-	CV_RegisterVar(&cv_translucency);
 	CV_RegisterVar(&cv_fovchange);
 	CV_RegisterVar(&cv_fov);
 
