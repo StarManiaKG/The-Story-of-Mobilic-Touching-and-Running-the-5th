@@ -160,7 +160,7 @@ enum
 
 	NUMSHADERTARGETS
 };
-#define NUMBASESHADERS NUMSHADERTARGETS
+//#define NUMBASESHADERS NUMSHADERTARGETS
 
 // Maximum amount of shader programs
 // Must be at least NUMSHADERTARGETS*2 to fit base and custom shaders for each shader target.

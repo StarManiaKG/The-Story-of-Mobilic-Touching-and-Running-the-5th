@@ -5949,12 +5949,16 @@ void HWR_Startup(void)
 		HWR_InitLight();
 #endif
 
-#if 0
+#if 1
 		// STAR NOTE: helps you further test bitten
 		gl_shadersavailable = HWR_InitShaders();
+        //gl_shadersavailable = false;
+        CONS_Printf("e\n");
 		HWR_SetShaderState();
+        CONS_Printf("e\n");
 		HWR_LoadAllCustomShaders();
-		HWR_TogglePaletteRendering();
+        CONS_Printf("e\n");
+		//HWR_TogglePaletteRendering();
 #endif
 
 		CONS_Printf("init-ed!\n");

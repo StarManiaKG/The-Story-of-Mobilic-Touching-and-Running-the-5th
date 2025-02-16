@@ -56,6 +56,34 @@ static struct {
 
 	// UI tinted wipe shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_UI_TINTED_WIPE_FRAGMENT_SHADER},
+#ifdef HAVE_GLES2
+        // Default shader with alpha test
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
+
+        // Floor shader with alpha test
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
+
+        // Wall shader with alpha test
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
+
+        // Sprite shader with alpha test
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
+
+        // Model shader with alpha test
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
+
+        // Model lighting shader with alpha test
+    {GLSL_MODEL_LIGHTING_VERTEX_SHADER, GLSL_MODEL_LIGHTING_ALPHA_TEST},
+
+        // Water shader with alpha test
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_WATER_ALPHA_TEST},
+
+        // Fade mask shader
+    {GLSL_FADEMASK_VERTEX_SHADER, GLSL_FADEMASK_FRAGMENT_SHADER},
+
+        // Additive and subtractive fade mask shader
+    {GLSL_FADEMASK_VERTEX_SHADER, GLSL_FADEMASK_ADDITIVEANDSUBTRACTIVE_FRAGMENT_SHADER},
+#endif
 
 	{NULL, NULL},
 };
@@ -90,12 +118,16 @@ static shadertarget_t gl_shadertargets[NUMSHADERTARGETS];
 boolean HWR_InitShaders(void)
 {
 	int i;
+    CONS_Printf("hit\n");
 
 	if (!HWD.pfnInitShaders())
 		return false;
+    CONS_Printf("hit 2\n");
 
+    CONS_Printf("%i",NUMSHADERTARGETS);
 	for (i = 0; i < NUMSHADERTARGETS; i++)
 	{
+        CONS_Printf("HIT 3: num %i", i);
 		// set up string pointers for base shaders
 		gl_shaders[i].vertex = Z_StrDup(gl_shadersources[i].vertex);
 		gl_shaders[i].fragment = Z_StrDup(gl_shadersources[i].fragment);
@@ -103,7 +135,7 @@ boolean HWR_InitShaders(void)
 		gl_shadertargets[i].base_shader = i;
 		gl_shadertargets[i].custom_shader = -1;
 	}
-
+    CONS_Printf("hit 3\n");
 	HWR_CompileShaders();
 
 	return true;

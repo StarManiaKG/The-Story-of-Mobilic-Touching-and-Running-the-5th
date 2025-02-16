@@ -35,19 +35,30 @@
 // stores the lighting result to gl_Color
 // (ambient lighting of 0.75 and diffuse lighting from above)
 #define GLSL_MODEL_VERTEX_SHADER \
-	"void main()\n" \
-	"{\n" \
-		"#ifdef SRB2_MODEL_LIGHTING\n" \
-		"float nDotVP = dot(gl_Normal, vec3(0, 1, 0));\n" \
-		"float light = min(0.75 + max(nDotVP, 0.0), 1.0);\n" \
-		"gl_FrontColor = vec4(light, light, light, 1.0);\n" \
-		"#else\n" \
-		"gl_FrontColor = gl_Color;\n" \
-		"#endif\n" \
-		"gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;\n" \
-		"gl_TexCoord[0].xy = gl_MultiTexCoord0.xy;\n" \
-		"gl_ClipVertex = gl_ModelViewMatrix * gl_Vertex;\n" \
-	"}\0"
+    "precision mediump float;\n" \
+    "attribute vec4 a_position;\n" \
+    "attribute vec3 a_normal;\n" \
+    "attribute vec4 a_color;\n" \
+    "attribute vec2 a_texCoord;\n" \
+    "uniform mat4 u_projectionMatrix;\n" \
+    "uniform mat4 u_modelViewMatrix;\n" \
+    "varying vec4 v_color;\n" \
+    "varying vec2 v_texCoord;\n" \
+    "void main() {\n" \
+    "    #ifdef SRB2_MODEL_LIGHTING\n" \
+    "    vec3 lightDirection = vec3(0.0, 1.0, 0.0);\n" \
+    "    float nDotVP = max(dot(a_normal, lightDirection), 0.0);\n" \
+    "    float ambient = 0.75;\n" \
+    "    float diffuse = nDotVP;\n" \
+    "    float light = min(ambient + diffuse, 1.0);\n" \
+    "    v_color = vec4(light, light, light, 1.0);\n" \
+    "    #else\n" \
+    "    v_color = a_color;\n" \
+    "    #endif\n" \
+    "    gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;\n" \
+    "    v_texCoord = a_texCoord;\n" \
+    "}\0"
+
 
 // ==================
 //  Fragment shaders
@@ -174,44 +185,56 @@
 // same as above but multiplies results with the lighting value from the
 // accompanying vertex shader (stored in gl_Color) if model lighting is enabled
 #define GLSL_MODEL_FRAGMENT_SHADER \
-	GLSL_WALL_FUDGES \
-	"#ifdef SRB2_PALETTE_RENDERING\n" \
-	"uniform sampler2D tex;\n" \
-	"uniform sampler3D palette_lookup_tex;\n" \
-	"uniform sampler2D lighttable_tex;\n" \
-	"uniform vec4 poly_color;\n" \
-	"uniform float lighting;\n" \
-	GLSL_DOOM_COLORMAP \
-	"void main(void) {\n" \
-		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		"#ifdef SRB2_MODEL_LIGHTING\n" \
-		"texel *= gl_Color;\n" \
-		"#endif\n" \
-		GLSL_PALETTE_RENDERING \
-	"}\n" \
-	"#else\n" \
-	"uniform sampler2D tex;\n" \
-	"uniform vec4 poly_color;\n" \
-	"uniform vec4 tint_color;\n" \
-	"uniform vec4 fade_color;\n" \
-	"uniform float lighting;\n" \
-	"uniform float fade_start;\n" \
-	"uniform float fade_end;\n" \
-	GLSL_DOOM_COLORMAP \
-	GLSL_DOOM_LIGHT_EQUATION \
-	"void main(void) {\n" \
-		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		"vec4 base_color = texel * poly_color;\n" \
-		"vec4 final_color = base_color;\n" \
-		GLSL_SOFTWARE_TINT_EQUATION \
-		GLSL_SOFTWARE_FADE_EQUATION \
-		"#ifdef SRB2_MODEL_LIGHTING\n" \
-		"final_color *= gl_Color;\n" \
-		"#endif\n" \
-		"final_color.a = texel.a * poly_color.a;\n" \
-		"gl_FragColor = final_color;\n" \
-	"}\n" \
-	"#endif\0"
+    "precision mediump float;\n" \
+    /* GLSL_WALL_FUDGES */ \
+    "#ifdef SRB2_PALETTE_RENDERING\n" \
+    "uniform sampler2D u_texture;\n" \
+    /*"uniform sampler3D palette_lookup_tex;\n"*/ /* Not supported in GLES 2.0 */ \
+    "uniform sampler2D u_lighttableTexture;\n" \
+    "uniform vec4 u_polyColor;\n" \
+    "uniform float u_lighting;\n" \
+    /* GLSL_DOOM_COLORMAP */ \
+    "varying vec4 v_color;\n" \
+    "varying vec2 v_texCoord;\n" \
+    "void main(void) {\n" \
+    "   vec4 texel = texture2D(u_texture, v_texCoord);\n" \
+    "   #ifdef SRB2_MODEL_LIGHTING\n" \
+    "   texel *= v_color;\n" \
+    "   #endif\n" \
+    /* GLSL_PALETTE_RENDERING */ \
+    "   gl_FragColor = texel * u_polyColor;\n" \
+    "}\n" \
+    "#else\n" \
+    "uniform sampler2D u_texture;\n" \
+    "uniform vec4 u_polyColor;\n" \
+    "uniform vec4 u_tintColor;\n" \
+    "uniform vec4 u_fadeColor;\n" \
+    "uniform float u_lighting;\n" \
+    "uniform float u_fadeStart;\n" \
+    "uniform float u_fadeEnd;\n" \
+    /* GLSL_DOOM_COLORMAP */ \
+    /* GLSL_DOOM_LIGHT_EQUATION */ \
+    "varying vec4 v_color;\n" \
+    "varying vec2 v_texCoord;\n" \
+    "void main(void) {\n" \
+    "   vec4 texel = texture2D(u_texture, v_texCoord);\n" \
+    "   vec4 base_color = texel * u_polyColor;\n" \
+    "   vec4 final_color = base_color;\n" \
+    /* GLSL_SOFTWARE_TINT_EQUATION */ \
+    "   final_color *= u_tintColor;\n" \
+    /* GLSL_SOFTWARE_FADE_EQUATION */ \
+    "   if (u_fadeStart < u_fadeEnd) {\n" \
+    "       float fade_factor = clamp((gl_FragCoord.z - u_fadeStart) / (u_fadeEnd - u_fadeStart), 0.0, 1.0);\n" \
+    "       final_color = mix(final_color, u_fadeColor, fade_factor);\n" \
+    "   }\n" \
+    "   #ifdef SRB2_MODEL_LIGHTING\n" \
+    "   final_color *= v_color;\n" \
+    "   #endif\n" \
+    "   final_color.a = texel.a * u_polyColor.a;\n" \
+    "   gl_FragColor = final_color;\n" \
+    "}\n" \
+    "#endif\0"
+
 
 //
 // Water surface shader
@@ -356,24 +379,33 @@
 //
 
 #define GLSL_FALLBACK_VERTEX_SHADER \
-	"void main()\n" \
-	"{\n" \
-		"gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;\n" \
-		"gl_FrontColor = gl_Color;\n" \
-		"gl_TexCoord[0].xy = gl_MultiTexCoord0.xy;\n" \
-		"gl_ClipVertex = gl_ModelViewMatrix * gl_Vertex;\n" \
-	"}\0"
+    "attribute vec4 a_position;\n" \
+    "attribute vec4 a_color;\n" \
+    "attribute vec2 a_texCoord;\n" \
+    "uniform mat4 u_projView;\n" \
+    "varying vec4 v_color;\n" \
+    "varying vec2 v_texCoord;\n" \
+    "void main()\n" \
+    "{\n" \
+        "gl_Position = u_projView * a_position;\n" \
+        "v_color = a_color;\n" \
+        "v_texCoord = a_texCoord;\n" \
+    "}\n"
 
 //
 // Generic fragment shader
 //
 
 #define GLSL_FALLBACK_FRAGMENT_SHADER \
-	"uniform sampler2D tex;\n" \
-	"uniform vec4 poly_color;\n" \
-	"void main(void) {\n" \
-		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st) * poly_color;\n" \
-	"}\0"
+    "precision mediump float;\n" \
+    "uniform sampler2D u_texture;\n" \
+    "uniform vec4 u_polyColor;\n" \
+    "varying vec4 v_color;\n" \
+    "varying vec2 v_texCoord;\n" \
+    "void main()\n" \
+    "{\n" \
+        "gl_FragColor = texture2D(u_texture, v_texCoord) * u_polyColor * v_color;\n" \
+    "}\n"
 
 //
 // Software fragment shader
