@@ -4,8 +4,7 @@ on:
   push:
     branches: [ android-port, bitten-master ]
   pull_request:
-    branches: [ android-port ]
-  workflow_dispatch:
+    branches: [ android ]
 
 jobs:
   build:
