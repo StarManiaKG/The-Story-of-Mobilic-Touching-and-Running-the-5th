@@ -1807,11 +1807,11 @@ EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
 	pglBindTexture(GL_TEXTURE_3D, paletteLookupTex);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE,
+	//pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE,
 #if 0
 		0, GL_RED, GL_UNSIGNED_BYTE, lut);
 #else
-		0, 0, GL_UNSIGNED_BYTE, lut);
+		//0, 0, GL_UNSIGNED_BYTE, lut);
 #endif
 	pglActiveTexture(GL_TEXTURE0);
 }

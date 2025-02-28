@@ -5563,7 +5563,7 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 
 	//------------------------------------------------------------------------
 	HWR_ClearView(); // Clears the depth buffer and resets the view I believe
-
+    drawsky = false; // bitten temp
 	if (!skybox && drawsky) // Don't draw the regular sky if there's a skybox
 		HWR_DrawSkyBackground(player);
 
@@ -5958,7 +5958,7 @@ void HWR_Startup(void)
         CONS_Printf("e\n");
 		HWR_LoadAllCustomShaders();
         CONS_Printf("e\n");
-		//HWR_TogglePaletteRendering();
+		HWR_TogglePaletteRendering();
 #endif
 
 		CONS_Printf("init-ed!\n");
