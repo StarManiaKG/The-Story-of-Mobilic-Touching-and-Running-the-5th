@@ -3,6 +3,7 @@
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Copyright (C) 1998-2021 by Sonic Team Junior.
 // Copyright (C) 2020-2023 by SRB2 Mobile Project.
+// Copyright (C) 2023-2025 by Bitten2Up.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -183,7 +184,7 @@ static void GLPerspective(GLfloat fovy, GLfloat aspect)
 }
 
 static void GLProject(GLfloat objX, GLfloat objY, GLfloat objZ,
-                      GLfloat* winX, GLfloat* winY, GLfloat* winZ)
+					  GLfloat* winX, GLfloat* winY, GLfloat* winZ)
 {
 	GLfloat in[4], out[4];
 	int i;
@@ -436,9 +437,9 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask, FBOOLEAN DepthMask, FRGBAFl
 	{
 		if (ClearColor)
 			pglClearColor(ClearColor->red,
-			              ClearColor->green,
-			              ClearColor->blue,
-			              ClearColor->alpha);
+						  ClearColor->green,
+						  ClearColor->blue,
+						  ClearColor->alpha);
 		ClearMask |= GL_COLOR_BUFFER_BIT;
 	}
 	if (DepthMask)
@@ -1807,11 +1808,11 @@ EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
 	pglBindTexture(GL_TEXTURE_3D, paletteLookupTex);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE,
+	//pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE,
 #if 0
 		0, GL_RED, GL_UNSIGNED_BYTE, lut);
 #else
-		0, 0, GL_UNSIGNED_BYTE, lut);
+		//0, 0, GL_UNSIGNED_BYTE, lut);
 #endif
 	pglActiveTexture(GL_TEXTURE0);
 }
@@ -1877,6 +1878,9 @@ EXPORT void HWRAPI(ClearLightTables) (void)
 }
 
 // This palette is used for the palette rendering postprocessing step.
+#include "SDL_opengl.h"
+//#define GL_TEXTURE_1D 0x0DE0
+
 EXPORT void HWRAPI(SetScreenPalette) (RGBA_t *palette)
 {
 	if (memcmp(screenPalette, palette, sizeof(screenPalette)))
@@ -1885,7 +1889,7 @@ EXPORT void HWRAPI(SetScreenPalette) (RGBA_t *palette)
 		if (!screenPaletteTex)
 			pglGenTextures(1, &screenPaletteTex);
 		pglActiveTexture(GL_TEXTURE2);
-#if 0
+#if 1
 		pglBindTexture(GL_TEXTURE_1D, screenPaletteTex);
 		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
