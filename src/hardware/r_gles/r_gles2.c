@@ -82,6 +82,7 @@ boolean GLBackend_LoadFunctions(void)
 
 	GETOPENGLFUNC(ClearDepthf)
 	GETOPENGLFUNC(DepthRangef)
+    GETOPENGLFUNC(TexImage3D)
 
 	Shader_LoadFunctions();
 	Shader_CleanPrograms();
@@ -636,8 +637,9 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 
 	if (update)
 		pglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-	else
-		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+    // bitten temp
+	//else
+		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 
 	if (MipmapEnabled)
 		pglGenerateMipmap(GL_TEXTURE_2D);
@@ -1807,11 +1809,11 @@ EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
 	pglBindTexture(GL_TEXTURE_3D, paletteLookupTex);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	//pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE,
+	pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE,
 #if 0
 		0, GL_RED, GL_UNSIGNED_BYTE, lut);
 #else
-		//0, 0, GL_UNSIGNED_BYTE, lut);
+		0, 0, GL_UNSIGNED_BYTE, lut);
 #endif
 	pglActiveTexture(GL_TEXTURE0);
 }

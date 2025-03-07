@@ -360,7 +360,7 @@ void Shader_Set(int type)
 void Shader_UnSet(void)
 {
 #ifdef HAVE_GLES2
-	Shader_Set(SHADER_NONE);
+	Shader_Set(SHADER_ALPHA_TEST); // bitten temp
 	Shader_SetUniforms(NULL, NULL, NULL, NULL);
 #else
 	gl_shaderstate.current = NULL;
