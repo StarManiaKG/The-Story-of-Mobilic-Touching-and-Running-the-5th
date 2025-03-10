@@ -1,8 +1,9 @@
 // SONIC ROBO BLAST 2
 //-----------------------------------------------------------------------------
-// Copyright (C) 2020-2021 by Jaime Ita Passos.
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Copyright (C) 1998-2021 by Sonic Team Junior.
+// Copyright (C) 2020-2023 by SRB2 Mobile Project.
+// Copyright (C) 2023-2025 by Bitten2Up.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -355,9 +356,9 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask, FBOOLEAN DepthMask, FRGBAFl
 	{
 		if (ClearColor)
 			pglClearColor(ClearColor->red,
-			              ClearColor->green,
-			              ClearColor->blue,
-			              ClearColor->alpha);
+						  ClearColor->green,
+						  ClearColor->blue,
+						  ClearColor->alpha);
 		ClearMask |= GL_COLOR_BUFFER_BIT;
 	}
 	if (DepthMask)
@@ -1492,113 +1493,31 @@ EXPORT void HWRAPI(MakeScreenTexture) (int tex)
 
 EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
 {
-	GLenum internalFormat;
-#if 0
-	if (pglversion[0] == '1' || pglversion[0] == '2')
-	{
-		// if the OpenGL version is below 3.0, then the GL_R8 format may not be available.
-		// so use GL_LUMINANCE8 instead to get a single component 8-bit format
-		// (it is possible to have access to shaders even in some OpenGL 1.x systems,
-		// so palette rendering can still possibly be achieved there)
-		internalFormat = GL_LUMINANCE8;
-	}
-	else
-	{
-		internalFormat = GL_R8;
-	}
-#endif
-	if (!paletteLookupTex)
-		pglGenTextures(1, &paletteLookupTex);
-	pglActiveTexture(GL_TEXTURE1);
-	pglBindTexture(GL_TEXTURE_3D, paletteLookupTex);
-	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE,
-#if 0
-		0, GL_RED, GL_UNSIGNED_BYTE, lut);
-#else
-		0, 0, GL_UNSIGNED_BYTE, lut);
-#endif
-	pglActiveTexture(GL_TEXTURE0);
+	(void)lut;
+	return;
 }
 
 EXPORT UINT32 HWRAPI(CreateLightTable) (RGBA_t *hw_lighttable)
 {
-	LTListItem *item = malloc(sizeof(LTListItem));
-	if (!LightTablesTail)
-	{
-		LightTablesHead = LightTablesTail = item;
-	}
-	else
-	{
-		LightTablesTail->next = item;
-		LightTablesTail = item;
-	}
-	item->next = NULL;
-	pglGenTextures(1, &item->id);
-	pglBindTexture(GL_TEXTURE_2D, item->id);
-	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, hw_lighttable);
-
-	// restore previously bound texture
-	pglBindTexture(GL_TEXTURE_2D, tex_downloaded);
-
-	return item->id;
+	(void)hw_lighttable;
+	return -1;
 }
 
 EXPORT void HWRAPI(UpdateLightTable) (UINT32 id, RGBA_t *hw_lighttable)
 {
-	LTListItem *item = LightTablesHead;
-	while (item && item->id != id)
-		item = item->next;
-
-	if (item)
-	{
-		pglBindTexture(GL_TEXTURE_2D, item->id);
-
-		// Just update it
-		pglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 32, GL_RGBA, GL_UNSIGNED_BYTE, hw_lighttable);
-
-		// restore previously bound texture
-		pglBindTexture(GL_TEXTURE_2D, tex_downloaded);
-	}
+	(void)id;
+	(void)hw_lighttable;
+	return;
 }
 
 // Delete light table textures, ids given before become invalid and must not be used.
-EXPORT void HWRAPI(ClearLightTables) (void)
-{
-	while (LightTablesHead)
-	{
-		LTListItem *item = LightTablesHead;
-		pglDeleteTextures(1, (GLuint *)&item->id);
-		LightTablesHead = item->next;
-		free(item);
-	}
-
-	LightTablesTail = NULL;
-
-	// we no longer have a bound light table (if we had one), we just deleted it!
-	tex_downloaded = 0;
-}
+EXPORT void HWRAPI(ClearLightTables) (void) {}
 
 // This palette is used for the palette rendering postprocessing step.
 EXPORT void HWRAPI(SetScreenPalette) (RGBA_t *palette)
 {
-	if (memcmp(screenPalette, palette, sizeof(screenPalette)))
-	{
-		memcpy(screenPalette, palette, sizeof(screenPalette));
-		if (!screenPaletteTex)
-			pglGenTextures(1, &screenPaletteTex);
-		pglActiveTexture(GL_TEXTURE2);
-#if 0
-		pglBindTexture(GL_TEXTURE_1D, screenPaletteTex);
-		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		pglTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, palette);
-#endif
-		pglActiveTexture(GL_TEXTURE0);
-	}
+	(void)palette;
+	return;
 }
 
 EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
