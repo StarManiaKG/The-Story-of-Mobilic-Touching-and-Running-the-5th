@@ -2675,6 +2675,51 @@ static void HWR_Subsector(size_t num)
 // BP: big hack for a test in lighning ref : 1249753487AB
 fixed_t *hwbbox;
 
+#if 0
+static void HWR_RenderBSPNode(INT32 bspnum)
+{
+	node_t *bsp = &nodes[bspnum];
+
+	// Decide which side the view point is on
+	INT32 side;
+
+	ps_numbspcalls.value.i++;
+
+	// Found a subsector?
+	if (bspnum & NF_SUBSECTOR)
+	{
+		if (bspnum == -1)
+		{
+			//*(gl_drawsubsector_p++) = 0;
+			HWR_Subsector(0);
+		}
+		else
+		{
+			//*(gl_drawsubsector_p++) = bspnum&(~NF_SUBSECTOR);
+			HWR_Subsector(bspnum&(~NF_SUBSECTOR));
+		}
+		return;
+	}
+
+	// Decide which side the view point is on.
+	side = R_PointOnSide(viewx, viewy, bsp);
+
+	// BP: big hack for a test in lighning ref : 1249753487AB
+	hwbbox = bsp->bbox[side];
+
+	// Recursively divide front space.
+	HWR_RenderBSPNode(bsp->children[side]);
+
+	// Possibly divide back space.
+	if (HWR_CheckBBox(bsp->bbox[side^1]))
+	{
+		// BP: big hack for a test in lighning ref : 1249753487AB
+		hwbbox = bsp->bbox[side^1];
+		HWR_RenderBSPNode(bsp->children[side^1]);
+	}
+}
+#else
+// BITTEN FIX(?)
 static void HWR_RenderBSPNode(INT32 bspnum)
 {
     node_t *bsp;
@@ -2703,6 +2748,7 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 
     HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
+#endif
 
 // ==========================================================================
 // gl_things.c
@@ -5935,20 +5981,26 @@ void HWR_Startup(void)
 		HWR_InitLight();
 #endif
 
-#if 1
+#if 0
 		// STAR NOTE: helps you further test bitten
 		gl_shadersavailable = HWR_InitShaders();
         //gl_shadersavailable = false;
-        CONS_Printf("e\n");
+        CONS_Printf("hit 5: setting shader state\n");
 		HWR_SetShaderState();
-        CONS_Printf("e\n");
+#if 0
+        CONS_Printf("hit 6:  loading all custom shaders\n");
 		HWR_LoadAllCustomShaders();
-        CONS_Printf("e\n");
+#endif
+#if 0
+		CONS_Printf("hit 7: toggling palette rendering\n");
 		HWR_TogglePaletteRendering();
 #endif
-
-		CONS_Printf("init-ed!\n");
+#endif
 	}
+
+#if 1
+	CONS_Printf("OPENGL init-ed!\n");
+#endif
 
 	gl_init = true;
 }

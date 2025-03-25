@@ -103,7 +103,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	SDL_GetWindowSize(window, &sdlw, &sdlh);
 
-#if 0
+#if 1
 #ifdef HAVE_GL_FRAMEBUFFER
 	GLFramebuffer_Disable();
 	RenderToFramebuffer = FramebufferEnabled;

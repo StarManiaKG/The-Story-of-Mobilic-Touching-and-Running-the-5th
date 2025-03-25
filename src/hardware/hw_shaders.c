@@ -15,7 +15,9 @@
 #include "hw_drv.h"
 #include "hw_shaders.h"
 #ifdef HAVE_GLES2
-#include "shaders/shaders_gles2.h"
+	#include "shaders/shaders_gles2.h"
+#else
+	#include "shaders/shaders_gl2.h"
 #endif
 #include "../z_zone.h"
 
@@ -124,7 +126,7 @@ boolean HWR_InitShaders(void)
 		return false;
     CONS_Printf("hit 2\n");
 
-    CONS_Printf("%i",NUMSHADERTARGETS);
+    CONS_Printf("\nnumshadertargets - %i\n\n",NUMSHADERTARGETS);
 	for (i = 0; i < NUMSHADERTARGETS; i++)
 	{
         CONS_Printf("HIT 3: num %i", i);
@@ -135,8 +137,11 @@ boolean HWR_InitShaders(void)
 		gl_shadertargets[i].base_shader = i;
 		gl_shadertargets[i].custom_shader = -1;
 	}
-    CONS_Printf("hit 3\n");
+    CONS_Printf("\nhit 4: shaders stored\n");
+#if 0
 	HWR_CompileShaders();
+	CONS_Printf("\nhit 5: shaders compiled\n");
+#endif
 
 	return true;
 }

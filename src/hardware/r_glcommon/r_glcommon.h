@@ -262,6 +262,7 @@ extern PFNglGenerateMipmap pglGenerateMipmap;
 
 #ifndef HAVE_GLES2
 #ifdef STATIC_OPENGL
+
 /* Transformation */
 #define pglMatrixMode glMatrixMode
 #define pglViewport glViewport
@@ -336,7 +337,8 @@ extern PFNglMaterialfv pglMaterialfv;
 /* Texture mapping */
 typedef void (R_GL_APIENTRY * PFNglTexEnvi) (GLenum target, GLenum pname, GLint param);
 extern PFNglTexEnvi pglTexEnvi;
-#endif
+
+#endif // STATIC_OPENGL
 #endif // HAVE_GLES2
 
 // Color
@@ -428,7 +430,6 @@ INT32 GLTexture_GetMemoryUsage(FTextureInfo *head);
 boolean GLBackend_Init(void);
 boolean GLBackend_InitContext(void);
 void    GLBackend_DeleteModelData(void);
-void    GLBackend_SetPalette(RGBA_t *palette);
 
 boolean GLBackend_LoadFunctions(void);
 boolean GLBackend_LoadExtraFunctions(void);
@@ -459,7 +460,6 @@ void GLBackend_SetSurface(INT32 w, INT32 h);
 void GLBackend_SetBlend(FBITFIELD PolyFlags);
 void GLBackend_SetModelView(INT32 w, INT32 h);
 void GLBackend_SetStates(void);
-void GLBackend_SetBlendingStates(FBITFIELD PolyFlags);
 void GLBackend_SetNoTexture(void);
 void GLBackend_SetClamp(GLenum pname);
 
@@ -471,8 +471,8 @@ boolean GLExtension_LoadFunctions(void);
 //                                                                  CONSTANTS
 // ==========================================================================
 
-#define N_PI_DEMI               (M_PIl/2.0f)
-#define ASPECT_RATIO            (1.0f)
+#define N_PI_DEMI               (M_PIl/2.0f) //(1.5707963268f)
+#define ASPECT_RATIO            (1.0f)  //(320.0f/200.0f)
 
 #define FAR_CLIPPING_PLANE      32768.0f // Draw further! Tails 01-21-2001
 
@@ -568,7 +568,13 @@ struct GLRGBAFloat
 };
 typedef struct GLRGBAFloat GLRGBAFloat;
 
-// StarManiaKG: easy android accessibility
+struct FExtensionList
+{
+	const char *name;
+	boolean *extension;
+};
+typedef struct FExtensionList FExtensionList;
+
 // lighttable list item
 struct LTListItem
 {
@@ -576,13 +582,6 @@ struct LTListItem
 	struct LTListItem *next;
 };
 typedef struct LTListItem LTListItem;
-
-struct FExtensionList
-{
-	const char *name;
-	boolean *extension;
-};
-typedef struct FExtensionList FExtensionList;
 
 // ==========================================================================
 //                                                                    GLOBALS
@@ -592,9 +591,12 @@ extern const GLubyte *gl_version;
 extern const GLubyte *gl_renderer;
 extern const GLubyte *gl_extensions;
 
+extern GLRGBAFloat white;
+extern GLRGBAFloat black;
+
 extern RGBA_t *TextureBuffer;
 
-extern RGBA_t myPaletteData[256];
+extern RGBA_t myPaletteData[];
 extern GLint  textureformatGL;
 
 extern GLint  screen_width;
@@ -622,13 +624,19 @@ extern GLuint    tex_downloaded;
 extern GLfloat   fov;
 extern FBITFIELD CurrentPolyFlags;
 
-// StarManiaKG: easy android accessibility
 extern GLuint screenTextures[NUMSCREENTEXTURES];
-
 extern GLuint screentexture;
 extern GLuint startScreenWipe;
 extern GLuint endScreenWipe;
 extern GLuint finalScreenTexture;
+
+extern RGBA_t screenPalette[]; // the palette for the postprocessing step in palette rendering
+extern GLuint screenPaletteTex; // 1D texture containing the screen palette
+extern GLuint paletteLookupTex; // 3D texture containing RGB -> palette index lookup table
+
+// Linked list of all lighttables.
+extern LTListItem *LightTablesTail;
+extern LTListItem *LightTablesHead;
 
 #ifdef HAVE_GL_FRAMEBUFFER
 extern GLuint FramebufferObject, FramebufferTexture;
@@ -667,5 +675,13 @@ extern boolean GLExtension_fragment_program;
 extern boolean GLExtension_framebuffer_object;
 #endif
 extern boolean GLExtension_shaders;
+
+// ==========================================================================
+//                                                                    BACKEND
+// ==========================================================================
+
+#if 0
+extern boolean GLBackend_useprogram;
+#endif
 
 #endif // _R_GLCOMMON_H_

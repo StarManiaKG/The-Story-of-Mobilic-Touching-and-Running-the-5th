@@ -592,7 +592,7 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 	write_backtrace(num);
 #endif
 #if defined(__ANDROID__)
-	NDKCrashHandler_ReportSignal("SRB2 was terminated by an abort signal");
+	NDKCrashHandler_ReportSignal("SRB2 was terminated by an abort signal", num);
 #endif
 	I_ReportSignal(num, 0);
 	I_ShutdownSystem();

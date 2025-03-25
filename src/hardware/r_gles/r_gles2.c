@@ -26,21 +26,6 @@
 
 #if defined (HWRENDER) && !defined (NOROPENGL)
 
-static GLRGBAFloat white = {1.0f, 1.0f, 1.0f, 1.0f};
-static GLRGBAFloat black = {0.0f, 0.0f, 0.0f, 1.0f};
-
-// ==========================================================================
-//                                                                      PORTS
-// ==========================================================================
-
-// Linked list of all lighttables.
-static LTListItem *LightTablesTail = NULL;
-static LTListItem *LightTablesHead = NULL;
-
-static RGBA_t screenPalette[256] = {0}; // the palette for the postprocessing step in palette rendering
-static GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
-RGBA_t  myPaletteData[256]; // the palette for converting textures to RGBA
-
 // ==========================================================================
 //                                                                  CONSTANTS
 // ==========================================================================
@@ -88,7 +73,11 @@ boolean GLBackend_LoadFunctions(void)
 	Shader_LoadFunctions();
 	Shader_CleanPrograms();
 
+#if 0
 	return Shader_Compile();
+#else
+	return true;
+#endif
 }
 
 boolean GLBackend_LoadExtraFunctions(void)
@@ -111,18 +100,36 @@ EXPORT boolean HWRAPI(InitShaders) (void)
 #ifndef GL_SHADERS
 	return false;
 #else
+#if 0
 	return Shader_Compile();
+#else
+#if 0
+	if (!GLBackend_useprogram)
+#else
+	if (!GLBackend_GetFunction("glUseProgram"))
 #endif
-}
+		return false;
 
-EXPORT void HWRAPI(SetShader) (int type)
-{
-	if (type == SHADER_NONE)
+#if 0
+	gl_fallback_shader.vertex_shader = Z_StrDup(GLSL_FALLBACK_VERTEX_SHADER);
+	gl_fallback_shader.gl_fallback_shader = Z_StrDup(GLSL_FALLBACK_FRAGMENT_SHADER);
+	if (!Shader_CompileProgram(&gl_fallback_shader, -1))
 	{
-		Shader_UnSet();
-		return;
+		GL_MSG_Error("Failed to compile the fallback shader program!\n");
+		return false;
 	}
-	Shader_Set(GLBackend_GetShaderType(type));
+#else
+	gl_shader_t *shader = &gl_shaders[SHADER_FLOOR];
+	if (!Shader_CompileProgram(shader, -1))
+	{
+		GL_MSG_Error("Failed to compile the fallback shader program!\n");
+		return false;
+	}
+#endif
+
+	return true;
+#endif
+#endif
 }
 
 EXPORT void HWRAPI(LoadShader) (int slot, char *code, hwdshaderstage_t stage)
@@ -159,9 +166,24 @@ EXPORT boolean HWRAPI(CompileShader) (int slot)
 #endif
 }
 
+//
+// Shader info
+// Those are given to the uniforms.
+//
+
 EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 {
 	Shader_SetInfo(info, value);
+}
+
+EXPORT void HWRAPI(SetShader) (int type)
+{
+	if (type == SHADER_NONE)
+	{
+		Shader_UnSet();
+		return;
+	}
+	Shader_Set(GLBackend_GetShaderType(type));
 }
 
 EXPORT void HWRAPI(UnSetShader) (void)
@@ -358,16 +380,6 @@ EXPORT boolean HWRAPI(Init) (void)
 
 
 // -----------------+
-// SetTexturePalette       : Sets the current palette.
-// Returns          :
-// -----------------+
-EXPORT void HWRAPI(SetTexturePalette) (RGBA_t *palette)
-{
-	GLBackend_SetPalette(palette);
-}
-
-
-// -----------------+
 // ClearMipMapCache : Flush OpenGL textures from memory
 // -----------------+
 EXPORT void HWRAPI(ClearMipMapCache) (void)
@@ -470,11 +482,10 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask, FBOOLEAN DepthMask, FRGBAFl
 // -----------------+
 EXPORT void HWRAPI(Draw2DLine) (F2DCoord *v1, F2DCoord *v2, RGBA_t Color)
 {
+	GLRGBAFloat fcolor = {Color.s.red/255.0f, Color.s.green/255.0f, Color.s.blue/255.0f, Color.s.alpha/255.0f};
 	GLfloat p[12];
 	GLfloat dx, dy;
 	GLfloat angle;
-
-	GLRGBAFloat fcolor = {Color.s.red/255.0f, Color.s.green/255.0f, Color.s.blue/255.0f, Color.s.alpha/255.0f};
 
 	if (gl_shaderstate.current == NULL)
 		return;
@@ -1880,11 +1891,20 @@ EXPORT void HWRAPI(ClearLightTables) (void)
 }
 
 // This palette is used for the palette rendering postprocessing step.
-#include "SDL_opengl.h"
-//#define GL_TEXTURE_1D 0x0DE0
 
 EXPORT void HWRAPI(SetScreenPalette) (RGBA_t *palette)
 {
+#if 1
+	(void)palette;
+	return;
+#else
+	// STAR NOTE: testing purposes
+	#if 0
+		#include "SDL_opengl.h"
+	#else
+		#define GL_TEXTURE_1D 0x0DE0
+	#endif
+
 	if (memcmp(screenPalette, palette, sizeof(screenPalette)))
 	{
 		memcpy(screenPalette, palette, sizeof(screenPalette));
@@ -1899,6 +1919,7 @@ EXPORT void HWRAPI(SetScreenPalette) (RGBA_t *palette)
 #endif
 		pglActiveTexture(GL_TEXTURE0);
 	}
+#endif
 }
 
 #endif //HWRENDER

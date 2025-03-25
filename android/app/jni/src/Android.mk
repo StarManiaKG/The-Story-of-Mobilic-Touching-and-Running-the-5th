@@ -21,6 +21,17 @@ ANDROID := 1
 include $(MAKE_DIR)/platform.mk
 include $(MAKE_DIR)/util.mk
 
+# Compile flags
+
+#-DHWRENDER -DHAVE_GLES -DHAVE_GLES2
+LOCAL_CFLAGS += -DUNIXCOMMON -DLINUX \
+				-DHAVE_SDL -DHAVE_MIXER -DHAVE_MIXERX -DHAVE_LIBGME \
+				-DHWRENDER -DHAVE_GLES \
+				-DTOUCHINPUTS -DNATIVESCREENRES -DDIRECTFULLSCREEN \
+				-DHAVE_ZLIB -DHAVE_PNG -DHAVE_CURL \
+				-DHAVE_WHANDLE -DHAVE_THREADS -DLOGCAT -DCOMPVERSION \
+				-DNONX86 -DNOASM -DNOMUMBLE
+
 # Source files
 
 SRC_HWR := $(SRC_MAIN)/hardware/
@@ -33,24 +44,28 @@ LOCAL_SRC_FILES += $(call List,$(LOCAL_PATH)/$(SRC_MAIN)/netcode/Sourcefile)
 LOCAL_SRC_FILES += $(call List,$(LOCAL_PATH)/$(SRC_HWR)/Sourcefile)
 LOCAL_SRC_FILES += $(call List,$(LOCAL_PATH)/$(SRC_SDL)/Sourcefile)
 
+ifeq ($(findstring -DHWRENDER, $(LOCAL_CFLAGS)), -DHWRENDER)
+	ifeq ($(findstring -DHAVE_GLES2, $(LOCAL_CFLAGS)), -DHAVE_GLES2)
+		LOCAL_SRC_FILES += $(SRC_HWR)/r_gles/r_gles2.c $(SRC_SDL)/ogl_es_sdl.c
+	endif
+	ifeq ($(findstring -DHAVE_GLES, $(LOCAL_CFLAGS)), -DHAVE_GLES)
+		LOCAL_SRC_FILES += $(SRC_HWR)/r_gles/r_gles1.c $(SRC_SDL)/ogl_es_sdl.c
+	endif
+	ifneq ($(findstring -DHAVE_GLES2, $(LOCAL_CFLAGS)), -DHAVE_GLES2)
+	ifneq ($(findstring -DHAVE_GLES, $(LOCAL_CFLAGS)), -DHAVE_GLES)
+		LOCAL_SRC_FILES += $(SRC_HWR)/r_opengl/r_opengl.c $(SRC_SDL)/ogl_sdl.c
+	endif
+	endif
+endif
+
 LOCAL_SRC_FILES += $(SRC_SDL)/SDL_main/SDL_android_main.c $(SRC_SDL)/mixer_sound.c $(SRC_SDL)/i_threads.c
-LOCAL_SRC_FILES += $(SRC_HWR)/r_gles/r_gles2.c $(SRC_SDL)/ogl_es_sdl.c
 LOCAL_SRC_FILES += $(SRC_MAIN)/w_handle.c $(SRC_MAIN)/comptime.c $(SRC_MAIN)/md5.c
 
-# Compile flags
-LOCAL_CFLAGS += -DUNIXCOMMON -DLINUX \
-				-DHAVE_SDL -DHAVE_MIXER -DHAVE_MIXERX -DHAVE_LIBGME \
-				-DHWRENDER -DHAVE_GLES -DHAVE_GLES2 \
-				-DTOUCHINPUTS -DNATIVESCREENRES -DDIRECTFULLSCREEN \
-				-DHAVE_ZLIB -DHAVE_PNG -DHAVE_CURL \
-				-DHAVE_WHANDLE -DHAVE_THREADS -DLOGCAT -DCOMPVERSION \
-				-DNONX86 -DNOASM -DNOMUMBLE
-
 # Libraries
+
 LOCAL_SHARED_LIBRARIES := SDL2 hidapi \
 	SDL2_mixer libmpg123 \
 	libpng libgme
-
 LOCAL_STATIC_LIBRARIES := libcurl
 LOCAL_LDLIBS := -lGLESv2 -lEGL -llog -lz
 

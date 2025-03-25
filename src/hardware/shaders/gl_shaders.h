@@ -101,13 +101,10 @@ typedef struct gl_shader_s
 	GLint uniforms[gluniform_max+1];
 	boolean compiled;
 #ifdef HAVE_GLES2
-	GLint attributes[glattribute_max+1];
-#endif
-
-#ifdef HAVE_GLES2
-	fmatrix4_t projMatrix;
-	fmatrix4_t viewMatrix;
-	fmatrix4_t modelMatrix;
+	GLint gles_attributes[glattribute_max+1];
+	fmatrix4_t gles_projMatrix;
+	fmatrix4_t gles_viewMatrix;
+	fmatrix4_t gles_modelMatrix;
 #endif
 } gl_shader_t;
 

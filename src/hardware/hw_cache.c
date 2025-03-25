@@ -276,8 +276,10 @@ static void HWR_DrawFlippedColumnInCache(const column_t *patchcol, UINT8 *block,
 					colortemp.s.alpha = alpha;
 					if ((originPatch != NULL) && (originPatch->style != AST_COPY))
 					{
-                        // bitten temp:
+#if 0
+                        // BITTEN NOTE: bitten temp:
                         break;
+#endif
 						RGBA_t rgbatexel;
 						rgbatexel.rgba = *(UINT32 *)dest;
 						colortemp.rgba = ASTBlendTexturePixel(rgbatexel, colortemp, originPatch->style, originPatch->alpha);

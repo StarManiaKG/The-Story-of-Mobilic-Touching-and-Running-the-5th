@@ -92,7 +92,11 @@
 #include "../hardware/r_glcommon/r_glcommon.h"
 // For dynamic referencing of HW rendering functions
 #include "hwsym_sdl.h"
+#if defined(HAVE_GLES) || defined(HAVE_GLES2)
+#include "ogl_es_sdl.h"
+#else
 #include "ogl_sdl.h"
+#endif
 #endif
 
 // Android

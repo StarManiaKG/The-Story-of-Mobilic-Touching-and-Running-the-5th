@@ -21,7 +21,7 @@
 //
 // Generic vertex shader
 //
-#if 0
+#if 0 // star test
 #define GLSL_DEFAULT_VERTEX_SHADER \
 	"void main()\n" \
 	"{\n" \
@@ -67,7 +67,7 @@
 //
 // Generic fragment shader
 //
-#if 0
+#if 0 // star test
 #define GLSL_DEFAULT_FRAGMENT_SHADER \
 	"uniform sampler2D tex;\n" \
 	"uniform vec4 poly_color;\n" \
@@ -130,7 +130,7 @@
 	"final_color.a = texel.a * poly_color.a;\n" \
 	"gl_FragColor = final_color;\n" \
 
-#if 0
+#if 0 // star test
 #define GLSL_SOFTWARE_FRAGMENT_SHADER \
 	"#ifdef SRB2_PALETTE_RENDERING\n" \
 	"uniform sampler2D tex;\n" \
@@ -249,7 +249,7 @@
 	"float sdistort = sin(a) * amp;\n" \
 	"float cdistort = cos(a) * amp;\n" \
 	"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n"
-#if 0
+#if 0 // star test
 #define GLSL_WATER_FRAGMENT_SHADER \
 	GLSL_FLOOR_FUDGES \
 	"const float freq = 0.025;\n" \
@@ -410,7 +410,7 @@
 //
 // Software fragment shader
 //
-#if 0
+#if 0 // star test
 #define GLSL_SOFTWARE_FADE_EQUATION \
 	"float darkness = R_DoomLightingEquation(lighting);\n" \
 	"if (fade_start != 0.0 || fade_end != 31.0) {\n" \
@@ -448,7 +448,7 @@
 // Sky fragment shader
 // Modulates poly_color with gl_Color
 //
-#if 0
+#if 0 // star test
 #define GLSL_SKY_FRAGMENT_SHADER \
 	"uniform sampler2D tex;\n" \
 	"uniform vec4 poly_color;\n" \

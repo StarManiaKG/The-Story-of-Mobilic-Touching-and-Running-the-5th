@@ -213,7 +213,7 @@ int Shader_AttribLoc(int loc)
 
 	attrib = LOC_TO_ATTRIB[loc];
 
-	return shader->attributes[attrib];
+	return shader->gles_attributes[attrib];
 }
 
 const char *Shader_AttribLocName(int loc)
@@ -274,6 +274,33 @@ boolean Shader_DisableVertexAttribArray(int attrib)
 #endif
 
 //
+// Custom shader loading
+//
+void Shader_Load(int slot, char *code, hwdshaderstage_t stage)
+{
+	gl_shader_t *shader;
+
+	if (slot < 0 || slot >= HWR_MAXSHADERS)
+		I_Error("Shader_Load: Invalid slot %d", slot);
+
+	shader = &gl_shaders[slot];
+
+#define LOADSHADER(source) { \
+		if (shader->source) \
+			Z_Free(shader->source); \
+		shader->source = code; \
+	}
+
+	if (stage == HWD_SHADERSTAGE_VERTEX)
+		LOADSHADER(vertex)
+	else if (stage == HWD_SHADERSTAGE_FRAGMENT)
+		LOADSHADER(fragment)
+	else
+		I_Error("Shader_Load: invalid shader stage");
+}
+
+
+//
 // Shader info
 // Those are given to the uniforms.
 //
@@ -288,32 +315,6 @@ void Shader_SetInfo(hwdshaderinfo_t info, INT32 value)
 		default:
 			break;
 	}
-}
-
-//
-// Custom shader loading
-//
-void Shader_Load(int slot, char *code, hwdshaderstage_t stage)
-{
-	gl_shader_t *shader;
-
-	if (slot < 0 || slot >= HWR_MAXSHADERS)
-		I_Error("Shader_Load: Invalid slot %d", slot);
-
-	shader = &gl_shaders[slot];
-
-#define LOADSHADER(source) { \
-	if (shader->source) \
-		Z_Free(shader->source); \
-	shader->source = code; \
-	}
-
-	if (stage == HWD_SHADERSTAGE_VERTEX)
-		LOADSHADER(vertex)
-	else if (stage == HWD_SHADERSTAGE_FRAGMENT)
-		LOADSHADER(fragment)
-	else
-		I_Error("Shader_Load: invalid shader stage");
 }
 
 void Shader_Set(int type)
@@ -360,7 +361,11 @@ void Shader_Set(int type)
 void Shader_UnSet(void)
 {
 #ifdef HAVE_GLES2
+#if 1
+	Shader_Set(SHADER_NONE); // star note: normal
+#else
 	Shader_Set(SHADER_ALPHA_TEST); // bitten temp
+#endif
 	Shader_SetUniforms(NULL, NULL, NULL, NULL);
 #else
 	gl_shaderstate.current = NULL;
@@ -515,9 +520,9 @@ boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 #define GETUNI(uniform) pglGetUniformLocation(shader->program, uniform);
 
 #ifdef HAVE_GLES2
-	memset(shader->projMatrix, 0x00, sizeof(fmatrix4_t));
-	memset(shader->viewMatrix, 0x00, sizeof(fmatrix4_t));
-	memset(shader->modelMatrix, 0x00, sizeof(fmatrix4_t));
+	memset(shader->gles_projMatrix, 0x00, sizeof(fmatrix4_t));
+	memset(shader->gles_viewMatrix, 0x00, sizeof(fmatrix4_t));
+	memset(shader->gles_modelMatrix, 0x00, sizeof(fmatrix4_t));
 
 	// transform
 	shader->uniforms[gluniform_model]      = GETUNI("u_model");
@@ -574,11 +579,11 @@ boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 #define GETATTRIB(attribute) pglGetAttribLocation(shader->program, attribute)
 
-	shader->attributes[glattribute_position]     = GETATTRIB("a_position");
-	shader->attributes[glattribute_texcoord]     = GETATTRIB("a_texcoord");
-	shader->attributes[glattribute_normal]       = GETATTRIB("a_normal");
-	shader->attributes[glattribute_colors]       = GETATTRIB("a_colors");
-	shader->attributes[glattribute_fadetexcoord] = GETATTRIB("a_fademasktexcoord");
+	shader->gles_attributes[glattribute_position]     = GETATTRIB("a_position");
+	shader->gles_attributes[glattribute_texcoord]     = GETATTRIB("a_texcoord");
+	shader->gles_attributes[glattribute_normal]       = GETATTRIB("a_normal");
+	shader->gles_attributes[glattribute_colors]       = GETATTRIB("a_colors");
+	shader->gles_attributes[glattribute_fadetexcoord] = GETATTRIB("a_fademasktexcoord");
 
 #undef GETATTRIB
 
@@ -672,23 +677,23 @@ void Shader_SetTransform(void)
 
 	Shader_SetIfChanged(shader);
 
-	if (memcmp(projMatrix, shader->projMatrix, sizeof(fmatrix4_t)))
+	if (memcmp(projMatrix, shader->gles_projMatrix, sizeof(fmatrix4_t)))
 	{
-		memcpy(shader->projMatrix, projMatrix, sizeof(fmatrix4_t));
+		memcpy(shader->gles_projMatrix, projMatrix, sizeof(fmatrix4_t));
 		if (shader->uniforms[gluniform_projection] != -1)
 			pglUniformMatrix4fv(shader->uniforms[gluniform_projection], 1, GL_FALSE, (float *)projMatrix);
 	}
 
-	if (memcmp(viewMatrix, shader->viewMatrix, sizeof(fmatrix4_t)))
+	if (memcmp(viewMatrix, shader->gles_viewMatrix, sizeof(fmatrix4_t)))
 	{
-		memcpy(shader->viewMatrix, viewMatrix, sizeof(fmatrix4_t));
+		memcpy(shader->gles_viewMatrix, viewMatrix, sizeof(fmatrix4_t));
 		if (shader->uniforms[gluniform_view] != -1)
 			pglUniformMatrix4fv(shader->uniforms[gluniform_view], 1, GL_FALSE, (float *)viewMatrix);
 	}
 
-	if (memcmp(modelMatrix, shader->modelMatrix, sizeof(fmatrix4_t)))
+	if (memcmp(modelMatrix, shader->gles_modelMatrix, sizeof(fmatrix4_t)))
 	{
-		memcpy(shader->modelMatrix, modelMatrix, sizeof(fmatrix4_t));
+		memcpy(shader->gles_modelMatrix, modelMatrix, sizeof(fmatrix4_t));
 		if (shader->uniforms[gluniform_model] != -1)
 			pglUniformMatrix4fv(shader->uniforms[gluniform_model], 1, GL_FALSE, (float *)modelMatrix);
 	}

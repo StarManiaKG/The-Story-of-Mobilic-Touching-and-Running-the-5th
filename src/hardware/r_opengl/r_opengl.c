@@ -28,63 +28,18 @@
 
 #if defined (HWRENDER) && !defined (NOROPENGL)
 
-struct GLRGBAFloat
-{
-	GLfloat red;
-	GLfloat green;
-	GLfloat blue;
-	GLfloat alpha;
-};
-typedef struct GLRGBAFloat GLRGBAFloat;
-
-// lighttable list item
-struct LTListItem
-{
-	UINT32 id;
-	struct LTListItem *next;
-};
-typedef struct LTListItem LTListItem;
-
 // ==========================================================================
 //                                                                  CONSTANTS
 // ==========================================================================
 
-static const GLubyte white[4] = { 255, 255, 255, 255 };
-
 // With OpenGL 1.1+, the first texture should be 1
 static GLuint NOTEXTURE_NUM = 0;
-
-#define      N_PI_DEMI               (M_PIl/2.0f) //(1.5707963268f)
-
-#define      ASPECT_RATIO            (1.0f)  //(320.0f/200.0f)
-#define      FAR_CLIPPING_PLANE      32768.0f // Draw further! Tails 01-21-2001
-static float NEAR_CLIPPING_PLANE =   NZCLIP_PLANE;
 
 // **************************************************************************
 //                                                                    GLOBALS
 // **************************************************************************
 
-
-static  GLuint      tex_downloaded  = 0;
-static  GLuint      lt_downloaded   = 0; // currently bound lighttable texture
-static  GLfloat     fov             = 90.0f;
-static  FBITFIELD   CurrentPolyFlags;
-
-// Linked list of all textures.
-static FTextureInfo *TexCacheTail = NULL;
-static FTextureInfo *TexCacheHead = NULL;
-
-static RGBA_t *textureBuffer = NULL;
 static size_t textureBufferSize = 0;
-
-// Linked list of all lighttables.
-static LTListItem *LightTablesTail = NULL;
-static LTListItem *LightTablesHead = NULL;
-
-static RGBA_t screenPalette[256] = {0}; // the palette for the postprocessing step in palette rendering
-static GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
-static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
-RGBA_t  myPaletteData[256]; // the palette for converting textures to RGBA
 
 GLint   screen_width    = 0;               // used by Draw2DLine()
 GLint   screen_height   = 0;
@@ -92,25 +47,15 @@ GLbyte  screen_depth    = 0;
 GLint   textureformatGL = 0;
 GLint maximumAnisotropy = 0;
 static GLboolean MipMap = GL_FALSE;
-static GLint min_filter = GL_LINEAR;
-static GLint mag_filter = GL_LINEAR;
-static GLint anisotropic_filter = 0;
-static boolean model_lighting = false;
 
 const GLubyte *gl_version = NULL;
 const GLubyte *gl_renderer = NULL;
 const GLubyte *gl_extensions = NULL;
 
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted;-)
-static GLfloat modelMatrix[16];
-static GLfloat projMatrix[16];
-static GLint   viewport[4];
-
-// Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
-//			flush all of the stored textures, leaving them unavailable at times such as between levels
-//			These need to start at 0 and be set to their number, and be reset to 0 when deleted so that intel GPUs
-//			can know when the textures aren't there, as textures are always considered resident in their virtual memory
-static GLuint screenTextures[NUMSCREENTEXTURES] = {0};
+GLfloat modelMatrix[16];
+GLfloat projMatrix[16];
+GLint   viewport[4];
 
 // shortcut for ((float)1/i)
 static const GLfloat byte2float[256] = {
@@ -879,7 +824,7 @@ static void GLPerspective(GLfloat fovy, GLfloat aspect)
 		{ 0.0f, 0.0f, 1.0f,-1.0f},
 		{ 0.0f, 0.0f, 0.0f, 0.0f},
 	};
-	const GLfloat zNear = NEAR_CLIPPING_PLANE;
+	const GLfloat zNear = near_clipping_plane;
 	const GLfloat zFar = FAR_CLIPPING_PLANE;
 	const GLfloat radians = (GLfloat)(fovy / 2.0f * M_PIl / 180.0f);
 	const GLfloat sine = (GLfloat)sin(radians);
@@ -1193,7 +1138,7 @@ EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, f
 	// GL_DBG_Printf ("GClipRect(%d, %d, %d, %d)\n", minx, miny, maxx, maxy);
 
 	pglViewport(minx, screen_height-maxy, maxx-minx, maxy-miny);
-	NEAR_CLIPPING_PLANE = nearclip;
+	near_clipping_plane = nearclip;
 
 	//pglScissor(minx, screen_height-maxy, maxx-minx, maxy-miny);
 	pglMatrixMode(GL_PROJECTION);

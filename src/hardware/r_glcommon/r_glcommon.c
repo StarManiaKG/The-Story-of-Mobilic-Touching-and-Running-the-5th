@@ -32,6 +32,9 @@ const GLubyte *gl_extensions = NULL;
 //                                                                    GLOBALS
 // ==========================================================================
 
+GLRGBAFloat white = {1.0f, 1.0f, 1.0f, 1.0f};
+GLRGBAFloat black = {0.0f, 0.0f, 0.0f, 1.0f};
+
 RGBA_t *TextureBuffer = NULL;
 static size_t TextureBufferSize = 0;
 
@@ -91,6 +94,20 @@ static GLModelList *ModelListHead = NULL;
 
 boolean model_lighting = false;
 
+// Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
+//			flush all of the stored textures, leaving them unavailable at times such as between levels
+//			These need to start at 0 and be set to their number, and be reset to 0 when deleted so that intel GPUs
+//			can know when the textures aren't there, as textures are always considered resident in their virtual memory
+GLuint screenTextures[NUMSCREENTEXTURES] = {0};
+
+RGBA_t screenPalette[256] = {0}; // the palette for the postprocessing step in palette rendering
+GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
+GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
+
+// Linked list of all lighttables.
+LTListItem *LightTablesTail = NULL;
+LTListItem *LightTablesHead = NULL;
+
 // ==========================================================================
 //                                                                 EXTENSIONS
 // ==========================================================================
@@ -129,6 +146,14 @@ static FExtensionList const ExtensionList[] = {
 };
 
 static void PrintExtensions(const GLubyte *extensions);
+
+// ==========================================================================
+//                                                                    BACKEND
+// ==========================================================================
+
+#if 0
+boolean GLBackend_useprogram = false;
+#endif
 
 // ==========================================================================
 //                                                           OPENGL FUNCTIONS
@@ -361,7 +386,14 @@ static const char *GetGLError(GLenum error)
 		case GL_INVALID_VALUE:                 return "GL_INVALID_VALUE";
 		case GL_INVALID_OPERATION:             return "GL_INVALID_OPERATION";
 		case GL_OUT_OF_MEMORY:                 return "GL_OUT_OF_MEMORY";
+#ifdef GL_INVALID_FRAMEBUFFER_OPERATION
+		/* StarManiaKG: sometimes this doesn't get defined.
+			How? Beyond me.
+			Hence, we just do things like this instead.
+			Easier for me, easier for the compiler.
+		*/
 		case GL_INVALID_FRAMEBUFFER_OPERATION: return "GL_INVALID_FRAMEBUFFER_OPERATION";
+#endif
 		default:                               return "unknown error";
 	}
 }
@@ -697,18 +729,6 @@ void GLBackend_DeleteModelData(void)
 	}
 
 	ModelListTail = ModelListHead = NULL;
-}
-
-void GLBackend_SetPalette(RGBA_t *palette)
-{
-	size_t palsize = sizeof(RGBA_t) * 256;
-
-	// on a palette change, you have to reload all of the textures
-	if (memcmp(&myPaletteData, palette, palsize))
-	{
-		memcpy(&myPaletteData, palette, palsize);
-		GLTexture_Flush();
-	}
 }
 
 static size_t lerpBufferSize = 0;
@@ -1390,6 +1410,10 @@ void GLExtension_Init(void)
 	GLExtension_vertex_buffer_object = true;
 	GLExtension_vertex_program = true;
 	GLExtension_fragment_program = true;
+#endif
+
+#if 0
+	GLBackend_useprogram = GLBackend_GetFunction("glUseProgram");
 #endif
 
 	while (ExtensionList[i].name)
