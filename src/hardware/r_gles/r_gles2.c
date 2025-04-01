@@ -251,9 +251,9 @@ EXPORT void HWRAPI(FlushScreenTextures) (void)
 	GLTexture_FlushScreen();
 }
 
-// -----------------+
-// SetModelView     :
-// -----------------+
+// ---------------------------+
+// GLBackend_SetModelView     :
+// ---------------------------+
 void GLBackend_SetModelView(INT32 w, INT32 h)
 {
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
@@ -511,7 +511,7 @@ EXPORT void HWRAPI(Draw2DLine) (F2DCoord *v1, F2DCoord *v2, RGBA_t Color)
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
-void GLBackend_SetClamp(UINT32 clamp)
+void GLBackend_SetClamp2D(UINT32 clamp)
 {
 	pglTexParameteri(GL_TEXTURE_2D, (GLenum)clamp, GL_CLAMP_TO_EDGE);
 }
@@ -637,12 +637,12 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 	if (pTexInfo->flags & TF_WRAPX)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	else
-		GLBackend_SetClamp(GL_TEXTURE_WRAP_S);
+		GLBackend_SetClamp2D(GL_TEXTURE_WRAP_S);
 
 	if (pTexInfo->flags & TF_WRAPY)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	else
-		GLBackend_SetClamp(GL_TEXTURE_WRAP_T);
+		GLBackend_SetClamp2D(GL_TEXTURE_WRAP_T);
 
 	if (GLExtension_texture_filter_anisotropic)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropic_filter);
@@ -789,10 +789,10 @@ static void DrawPolygon_GLES2(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT 
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	if (PolyFlags & PF_ForceWrapX)
-		GLBackend_SetClamp(GL_TEXTURE_WRAP_S);
+		GLBackend_SetClamp2D(GL_TEXTURE_WRAP_S);
 
 	if (PolyFlags & PF_ForceWrapY)
-		GLBackend_SetClamp(GL_TEXTURE_WRAP_T);
+		GLBackend_SetClamp2D(GL_TEXTURE_WRAP_T);
 }
 
 EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
@@ -1442,8 +1442,8 @@ EXPORT void HWRAPI(StartScreenWipe) (void)
 	{
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		GLBackend_SetClamp(GL_TEXTURE_WRAP_S);
-		GLBackend_SetClamp(GL_TEXTURE_WRAP_T);
+		GLBackend_SetClamp2D(GL_TEXTURE_WRAP_S);
+		GLBackend_SetClamp2D(GL_TEXTURE_WRAP_T);
 		pglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, texsize, texsize, 0);
 	}
 	else
@@ -1471,8 +1471,8 @@ EXPORT void HWRAPI(EndScreenWipe)(void)
 	{
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		GLBackend_SetClamp(GL_TEXTURE_WRAP_S);
-		GLBackend_SetClamp(GL_TEXTURE_WRAP_T);
+		GLBackend_SetClamp2D(GL_TEXTURE_WRAP_S);
+		GLBackend_SetClamp2D(GL_TEXTURE_WRAP_T);
 		pglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, texsize, texsize, 0);
 	}
 	else
@@ -1712,8 +1712,8 @@ EXPORT void HWRAPI(MakeScreenTexture) (int tex)
 	{
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		GLBackend_SetClamp(GL_TEXTURE_WRAP_S);
-		GLBackend_SetClamp(GL_TEXTURE_WRAP_T);
+		GLBackend_SetClamp2D(GL_TEXTURE_WRAP_S);
+		GLBackend_SetClamp2D(GL_TEXTURE_WRAP_T);
 		pglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, texsize, texsize, 0);
 	}
 	else
