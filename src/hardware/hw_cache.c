@@ -278,7 +278,7 @@ static void HWR_DrawFlippedColumnInCache(const column_t *patchcol, UINT8 *block,
 					{
 #if 0
                         // BITTEN NOTE: bitten temp:
-                        break;
+                        continue;
 #endif
 						RGBA_t rgbatexel;
 						rgbatexel.rgba = *(UINT32 *)dest;
