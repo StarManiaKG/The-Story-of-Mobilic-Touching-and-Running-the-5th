@@ -277,8 +277,10 @@ boolean Shader_DisableVertexAttribArray(int attrib)
 
 boolean Shader_Init() {
 #ifdef GL_SHADERS
+#ifndef HAVE_GLES2
 	if (!pglUseProgram)
 		return false;
+#endif
 
 	gl_fallback_shader.vertex = Z_StrDup(GLSL_FALLBACK_VERTEX_SHADER);
 	gl_fallback_shader.fragment = Z_StrDup(GLSL_FALLBACK_FRAGMENT_SHADER);
