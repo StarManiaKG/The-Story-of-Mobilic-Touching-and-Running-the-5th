@@ -197,6 +197,8 @@ void Shader_LoadFunctions(void)
 int Shader_AttribLoc(int loc)
 {
 	gl_shader_t *shader = gl_shaderstate.current;
+	if (shader == NULL)
+		shader = &gl_fallback_shader;
 	int pos, attrib;
 
 	glattribute_t LOC_TO_ATTRIB[glattribute_max] =
@@ -388,7 +390,7 @@ void Shader_UnSet(void)
 #endif
 	Shader_SetUniforms(NULL, NULL, NULL, NULL);
 #else
-	gl_shaderstate.current =  &gl_fallback_shader;
+	gl_shaderstate.current =  NULL;
 	gl_shaderstate.type = 0;
 	gl_shaderstate.program = 0;
 
