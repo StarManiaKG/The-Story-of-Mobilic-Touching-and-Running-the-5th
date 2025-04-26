@@ -42,7 +42,7 @@ fmatrix4_t modelMatrix;
 
 static GLint viewport[4];
 
-static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
+//GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
 
 typedef void (R_GL_APIENTRY * PFNglVertexAttribPointer) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
 static PFNglVertexAttribPointer pglVertexAttribPointer;

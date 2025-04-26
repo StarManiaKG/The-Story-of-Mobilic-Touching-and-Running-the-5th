@@ -321,7 +321,7 @@ void Shader_Set(int type)
 {
 	gl_shader_t *shader = gl_shaderstate.current;
 
-	if (type == SHADER_NONE)
+	if (type == SHADER_NONE || shader == NULL)
 	{
 		Shader_UnSet();
 		return;
@@ -361,7 +361,7 @@ void Shader_Set(int type)
 void Shader_UnSet(void)
 {
 #ifdef HAVE_GLES2
-#if 1
+#if 0
 	Shader_Set(SHADER_NONE); // star note: normal
 #else
 	Shader_Set(SHADER_ALPHA_TEST); // bitten temp

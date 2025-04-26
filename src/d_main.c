@@ -101,7 +101,7 @@
 #endif
 #include "apk_main.h"
 
-#if 1
+#if defined(__ANDROID__)
 	// STAR NOTE: i wanna delete this from here eventually
 	#ifdef LOGMESSAGES
 		FILE *logstream = NULL;
