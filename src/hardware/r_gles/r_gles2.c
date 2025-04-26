@@ -73,7 +73,7 @@ boolean GLBackend_LoadFunctions(void)
 	Shader_LoadFunctions();
 	Shader_CleanPrograms();
 
-#if 0
+#if 1
 	return Shader_Compile();
 #else
 	return true;
@@ -97,38 +97,10 @@ boolean GLBackend_LoadExtraFunctions(void)
 
 EXPORT boolean HWRAPI(InitShaders) (void)
 {
-#ifndef GL_SHADERS
+#ifdef GL_SHADERS
+	return Shader_Init();
+#else
 	return false;
-#else
-#if 0
-	return Shader_Compile();
-#else
-#if 0
-	if (!GLBackend_useprogram)
-#else
-	if (!GLBackend_GetFunction("glUseProgram"))
-#endif
-		return false;
-
-#if 0
-	gl_fallback_shader.vertex_shader = Z_StrDup(GLSL_FALLBACK_VERTEX_SHADER);
-	gl_fallback_shader.gl_fallback_shader = Z_StrDup(GLSL_FALLBACK_FRAGMENT_SHADER);
-	if (!Shader_CompileProgram(&gl_fallback_shader, -1))
-	{
-		GL_MSG_Error("Failed to compile the fallback shader program!\n");
-		return false;
-	}
-#else
-	gl_shader_t *shader = &gl_shaders[SHADER_FLOOR];
-	if (!Shader_CompileProgram(shader, -1))
-	{
-		GL_MSG_Error("Failed to compile the fallback shader program!\n");
-		return false;
-	}
-#endif
-
-	return true;
-#endif
 #endif
 }
 
