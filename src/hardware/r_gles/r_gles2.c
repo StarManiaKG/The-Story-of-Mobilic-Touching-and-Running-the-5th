@@ -1773,20 +1773,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, int width, int height)
 EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
 {
 	GLenum internalFormat;
-#if 0
-	if (gl_version[0] == '1' || gl_version[0] == '2')
-	{
-		// if the OpenGL version is below 3.0, then the GL_R8 format may not be available.
-		// so use GL_LUMINANCE8 instead to get a single component 8-bit format
-		// (it is possible to have access to shaders even in some OpenGL 1.x systems,
-		// so palette rendering can still possibly be achieved there)
-		internalFormat = GL_LUMINANCE8;
-	}
-	else
-	{
-		internalFormat = GL_R8;
-	}
-#endif
+	internalFormat = GL_LUMINANCE;
 	if (!paletteLookupTex)
 		pglGenTextures(1, &paletteLookupTex);
 	pglActiveTexture(GL_TEXTURE1);

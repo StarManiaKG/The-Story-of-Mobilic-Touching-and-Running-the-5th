@@ -409,7 +409,7 @@
 	"uniform sampler2D t_texsampler;\n" \
 	"uniform vec4 poly_color;\n" \
 	"void main(void) {\n" \
-		"gl_FragColor = texture2D(t_texsampler, v_texcoord) * poly_color;\n" \
+		"gl_FragColor = poly_color;\n" \
 	"}\0"
 
 //

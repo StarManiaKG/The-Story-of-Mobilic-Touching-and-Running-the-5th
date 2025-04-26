@@ -829,8 +829,10 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean chromakeyed)
 		grMipmap = originalMipmap->nextcolormap;
 	}
 
+#if 0 // bitten temp
 	if (grMipmap->data == NULL)
 		HWR_GenerateTexture(tex, grtex, grMipmap);
+#endif
 
 	if (!grMipmap->downloaded)
 		HWD.pfnSetTexture(grMipmap);
