@@ -50,19 +50,7 @@ LOCAL_SRC_FILES += $(call List,$(LOCAL_PATH)/$(SRC_MAIN)/netcode/Sourcefile)
 LOCAL_SRC_FILES += $(call List,$(LOCAL_PATH)/$(SRC_HWR)/Sourcefile)
 LOCAL_SRC_FILES += $(call List,$(LOCAL_PATH)/$(SRC_SDL)/Sourcefile)
 
-ifeq ($(findstring -DHWRENDER, $(LOCAL_CFLAGS)), -DHWRENDER)
-	ifeq ($(findstring -DHAVE_GLES2, $(LOCAL_CFLAGS)), -DHAVE_GLES2)
-		LOCAL_SRC_FILES += $(SRC_HWR)/r_gles/r_gles2.c $(SRC_SDL)/ogl_es_sdl.c
-	endif
-	ifeq ($(findstring -DHAVE_GLES, $(LOCAL_CFLAGS)), -DHAVE_GLES)
-		LOCAL_SRC_FILES += $(SRC_HWR)/r_gles/r_gles1.c $(SRC_SDL)/ogl_es_sdl.c
-	endif
-	ifneq ($(findstring -DHAVE_GLES2, $(LOCAL_CFLAGS)), -DHAVE_GLES2)
-	ifneq ($(findstring -DHAVE_GLES, $(LOCAL_CFLAGS)), -DHAVE_GLES)
-		LOCAL_SRC_FILES += $(SRC_HWR)/r_opengl/r_opengl.c $(SRC_SDL)/ogl_sdl.c
-	endif
-	endif
-endif
+include $(SRC_XTRA)/Makefile.d/xtra.mk # loads any extra files
 
 LOCAL_SRC_FILES += $(SRC_SDL)/SDL_main/SDL_android_main.c $(SRC_SDL)/mixer_sound.c $(SRC_SDL)/i_threads.c
 LOCAL_SRC_FILES += $(SRC_MAIN)/comptime.c $(SRC_MAIN)/md5.c
