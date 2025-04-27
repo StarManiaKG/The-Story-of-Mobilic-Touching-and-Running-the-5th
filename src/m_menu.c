@@ -8484,7 +8484,9 @@ static void M_LoadAddonsPatches(void)
 	addonsp[EXT_PK3] = W_CachePatchName("M_FPK3", PU_PATCH);
 	addonsp[EXT_SOC] = W_CachePatchName("M_FSOC", PU_PATCH);
 	addonsp[EXT_LUA] = W_CachePatchName("M_FLUA", PU_PATCH);
+#ifdef HWRENDER
     addonsp[EXT_MZIP] = W_CachePatchName("M_FMZIP", PU_PATCH);
+#endif
 	addonsp[NUM_EXT] = W_CachePatchName("M_FUNKN", PU_PATCH);
 	addonsp[NUM_EXT+1] = W_CachePatchName("M_FSEL", PU_PATCH);
 	addonsp[NUM_EXT+2] = W_CachePatchName("M_FLOAD", PU_PATCH);
@@ -11814,7 +11816,7 @@ static void M_SaveGameDeleteResponse(INT32 ch)
 #if 0
 	snprintf(name, sizeof name, savegamename, saveSlotSelected);
 #else
-	snprintf(name, sizeof name, savegamename[saveSlotSelected-1]);
+	snprintf(name, sizeof name, "%s", savegamename[saveSlotSelected-1]);
 #endif
 #else
 	strlcpy(name, savegamename[saveSlotSelected-1], sizeof name);
@@ -12112,8 +12114,6 @@ TSNAVHANDLER(SaveSelect)
 
 	return true;
 }
-
-#undef LOADGAME_SCROLLAMT
 #endif
 
 static void M_FirstTimeResponse(INT32 ch)
