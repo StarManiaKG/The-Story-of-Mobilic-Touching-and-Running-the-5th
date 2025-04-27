@@ -496,7 +496,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *grtex, GLMipmap_t 
 		patch_t *realpatch = NULL;
 		boolean free_patch = true;
 
-#ifdef NO_PNG_LUMPS
+#ifndef NO_PNG_LUMPS
 		size_t lumplength = W_LumpLengthPwad(wadnum, lumpnum);
 		if (Picture_IsLumpPNG(pdata, lumplength))
 			realpatch = (patch_t *)Picture_PNGConvert(pdata, PICFMT_PATCH, NULL, NULL, NULL, NULL, lumplength, NULL, 0);
