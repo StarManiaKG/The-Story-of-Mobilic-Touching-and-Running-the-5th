@@ -369,7 +369,6 @@ static SDL_bool Impl_RenderContextDestroy(void)
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 
 		OglSdlSurface(realwidth, realheight);
-		HWR_Startup();
 
 #if defined(__ANDROID__)
 		if (vid.glstate == VID_GL_LIBRARY_LOADED)
