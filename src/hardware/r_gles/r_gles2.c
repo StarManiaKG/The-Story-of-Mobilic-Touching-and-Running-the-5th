@@ -44,9 +44,6 @@ static GLint viewport[4];
 
 static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
 
-typedef void (R_GL_APIENTRY * PFNglVertexAttribPointer) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
-static PFNglVertexAttribPointer pglVertexAttribPointer;
-
 static void VertexAttribPointerInternal(int attrib, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer, const char *function, const int line)
 {
 	int loc = Shader_AttribLoc(attrib);
@@ -543,7 +540,7 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 	if (pTexInfo->format == GL_TEXFMT_P_8 || pTexInfo->format == GL_TEXFMT_AP_88)
 	{
 		GLTexture_AllocBuffer(pTexInfo);
-		ptex = tex = TextureBuffer;
+		ptex = tex = textureBuffer;
 
 		for (j = 0; j < h; j++)
 		{
@@ -586,7 +583,7 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 	else if (pTexInfo->format == GL_TEXFMT_ALPHA_INTENSITY_88)
 	{
 		GLTexture_AllocBuffer(pTexInfo);
-		ptex = tex = TextureBuffer;
+		ptex = tex = textureBuffer;
 
 		for (j = 0; j < h; j++)
 		{
@@ -604,7 +601,7 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 	else if (pTexInfo->format == GL_TEXFMT_ALPHA_8) // Used for fade masks
 	{
 		GLTexture_AllocBuffer(pTexInfo);
-		ptex = tex = TextureBuffer;
+		ptex = tex = textureBuffer;
 
 		for (j = 0; j < h; j++)
 		{

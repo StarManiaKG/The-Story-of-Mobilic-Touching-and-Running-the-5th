@@ -5833,23 +5833,6 @@ consvar_t cv_glsolvetjoin = CVAR_INIT ("gr_solvetjoin", "On", 0, CV_OnOff, NULL)
 
 consvar_t cv_glbatching = CVAR_INIT ("gr_batching", "On", 0, CV_OnOff, NULL);
 
-#ifdef HAVE_GL_FRAMEBUFFER
-consvar_t cv_glframebuffer = CVAR_INIT ("gr_framebuffer", "Off", CV_SAVE|CV_CALL, CV_OnOff, CV_glframebuffer_OnChange);
-consvar_t cv_glrenderbufferdepth = CVAR_INIT ("gr_renderbufferdepth", "Float", CV_SAVE|CV_CALL, glrenderbufferdepth_cons_t, CV_glrenderbufferdepth_OnChange);
-
-static void CV_glframebuffer_OnChange(void)
-{
-	if (rendermode == render_opengl)
-		HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
-}
-
-static void CV_glrenderbufferdepth_OnChange(void)
-{
-	if (rendermode == render_opengl)
-		HWD.pfnSetSpecialState(HWD_SET_RENDERBUFFER_DEPTH, cv_glrenderbufferdepth.value);
-}
-#endif
-
 static CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 bits"}, {0, NULL}};
 
 consvar_t cv_glpaletterendering = CVAR_INIT ("gr_paletterendering", "On", CV_SAVE|CV_CALL, CV_OnOff, CV_glpaletterendering_OnChange);
@@ -5857,6 +5840,11 @@ consvar_t cv_glpalettedepth = CVAR_INIT ("gr_palettedepth", "16 bits", CV_SAVE|C
 
 #define ONLY_IF_GL_LOADED if (vid.glstate != VID_GL_LIBRARY_LOADED) return;
 consvar_t cv_glwireframe = CVAR_INIT ("gr_wireframe", "Off", 0, CV_OnOff, NULL);
+
+#ifdef HAVE_GL_FRAMEBUFFER
+consvar_t cv_glframebuffer = CVAR_INIT ("gr_framebuffer", "Off", CV_SAVE|CV_CALL, CV_OnOff, CV_glframebuffer_OnChange);
+consvar_t cv_glrenderbufferdepth = CVAR_INIT ("gr_renderbufferdepth", "Float", CV_SAVE|CV_CALL, glrenderbufferdepth_cons_t, CV_glrenderbufferdepth_OnChange);
+#endif
 
 static void CV_modelpack_OnChange(void)
 {
@@ -5917,6 +5905,20 @@ static void CV_glshaders_OnChange(void)
 		HWR_TogglePaletteRendering();
 	}
 }
+
+#ifdef HAVE_GL_FRAMEBUFFER
+static void CV_glframebuffer_OnChange(void)
+{
+	if (rendermode == render_opengl)
+		HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
+}
+
+static void CV_glrenderbufferdepth_OnChange(void)
+{
+	if (rendermode == render_opengl)
+		HWD.pfnSetSpecialState(HWD_SET_RENDERBUFFER_DEPTH, cv_glrenderbufferdepth.value);
+}
+#endif
 
 //added by Hurdler: console varibale that are saved
 void HWR_AddCommands(void)

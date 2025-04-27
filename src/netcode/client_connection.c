@@ -32,12 +32,14 @@
 #include "../z_zone.h"
 #include "../doomtype.h"
 #include "../doomstat.h"
+#if defined (__GNUC__) || defined (__unix__)
+#include <unistd.h>
+#endif
+
+// Android
 #ifdef TOUCHINPUTS
 #include "../ts_main.h"
 #include "../ts_draw.h"
-#endif
-#if defined (__GNUC__) || defined (__unix__)
-#include <unistd.h>
 #endif
 
 cl_mode_t cl_mode = CL_SEARCHING;
@@ -55,11 +57,36 @@ static boolean IsDownloadingFile(void)
 	return false;
 }
 
-static void DrawConnectionStatusBox(const char *abortstring)
+static void DrawConnectionStatusBox(void)
 {
+	const char *abortstring = NULL;
+
 	M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-16-8, 32, 1);
-	if (cl_mode != CL_CONFIRMCONNECT)
-		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-16-16, V_YELLOWMAP, abortstring);
+
+	if (cl_mode == CL_CONFIRMCONNECT || IsDownloadingFile())
+		return;
+
+#ifdef TOUCHINPUTS
+	if (inputmethod == INPUTMETHOD_TOUCH)
+		abortstring = "Tap Back to abort";
+	else
+#endif
+	if (inputmethod == INPUTMETHOD_JOYSTICK)
+	{
+#if 0
+		char abortstringbuf[256];
+		snprintf(abortstringbuf, sizeof(abortstringbuf), "Push %s to abort", G_KeyNumToName(KEY_JOY1+1));
+		abortstring = abortstringbuf;
+#else
+		abortstring = va("Push %s to abort", G_KeyNumToName(KEY_JOY1+1));
+#endif
+	}
+	else if (inputmethod == INPUTMETHOD_TVREMOTE)
+		abortstring = "Push Back to abort";
+	else
+		abortstring = "Press ESC to abort";
+
+	V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-16-16, V_YELLOWMAP, abortstring);
 }
 
 static void DrawFileProgress(fileneeded_t *file, int y)
@@ -92,27 +119,11 @@ static void DrawFileProgress(fileneeded_t *file, int y)
 //
 static void CL_DrawConnectionStatus(void)
 {
-	const char *abortstring = NULL;
-	char abortstringbuf[256];
 	INT32 ccstime = I_GetTime();
 
 	// Draw background fade
 	V_DrawFadeScreen(0xFF00, 16); // force default
 
-#ifdef TOUCHINPUTS
-	if (inputmethod == INPUTMETHOD_TOUCH)
-		abortstring = "Tap Back to abort";
-	else
-#endif
-	if (inputmethod == INPUTMETHOD_JOYSTICK)
-	{
-		snprintf(abortstringbuf, sizeof(abortstringbuf), "Push %s to abort", G_KeyNumToName(KEY_JOY1+1));
-		abortstring = abortstringbuf;
-	}
-	else if (inputmethod == INPUTMETHOD_TVREMOTE)
-		abortstring = "Push Back to abort";
-	else
-		abortstring = "Press ESC to abort";
 	if (cl_mode != CL_DOWNLOADFILES && cl_mode != CL_DOWNLOADHTTPFILES && cl_mode != CL_LOADFILES)
 	{
 		INT32 animtime = ((ccstime / 4) & 15) + 16;
@@ -120,7 +131,7 @@ static void CL_DrawConnectionStatus(void)
 		const char *cltext;
 
 		// Draw the bottom box.
-		DrawConnectionStatusBox(abortstring);
+		DrawConnectionStatusBox();
 
 		if (cl_mode == CL_SEARCHING)
 			palstart = 32; // Red
@@ -206,7 +217,7 @@ static void CL_DrawConnectionStatus(void)
 				Snake_Draw(snake);
 
 			// Draw the bottom box.
-			DrawConnectionStatusBox(abortstring);
+			DrawConnectionStatusBox();
 
 			if (fileneeded)
 			{
@@ -277,12 +288,14 @@ static void CL_DrawConnectionStatus(void)
 			if (snake)
 				Snake_Draw(snake);
 
-			DrawConnectionStatusBox(abortstring);
+			DrawConnectionStatusBox();
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-16-24, V_YELLOWMAP,
 				M_GetText("Waiting to download files..."));
 		}
 	}
+
 #ifdef TOUCHINPUTS
+	// SRB2ANDROID: we gotta get around somehow!
 	TS_DrawNavigation();
 #endif
 }
@@ -645,16 +658,16 @@ static void M_ConfirmConnect(event_t *ev)
 			cl_mode = CL_ABORTED;
 			M_ClearMenus(true);
 		}
+#ifdef TOUCHINPUTS
 		else // this should probally not be like this, but i dont feel like fixing it rn, though would require CL_ServerConnectionEventHandler -bitten 
 		{
-#ifdef TOUCHINPUTS
 
 			TS_DefineNavigationButtons();
 			TS_HideNavigationButtons();
 
 			touchnavigation[TOUCHNAV_BACK].defined = true;
-#endif
 		}
+#endif
 	}
 }
 
@@ -1178,7 +1191,12 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 	{
 		I_OsPolling();
 #ifdef TOUCHINPUTS
-		TS_UpdateNavigation(1);
+#if 1
+		// STAR NOTE: weeeeee
+		NetUpdate();
+#else
+		TS_UpdateNavigation(*oldtic);
+#endif
 #endif
 		if (cl_mode == CL_CONFIRMCONNECT)
 			D_ProcessEvents(); //needed for menu system to receive inputs
@@ -1295,6 +1313,7 @@ void CL_ConnectToServer(void)
 		 serverlist[i].info.version%100, serverlist[i].info.subversion);
 	}
 	SL_ClearServerList(servernode);
+
 #ifdef TOUCHINPUTS
 	// Close the on-screen keyboard, if it's still open
 	if (I_KeyboardOnScreen())
@@ -1306,6 +1325,7 @@ void CL_ConnectToServer(void)
 
 	touchnavigation[TOUCHNAV_BACK].defined = true;
 #endif
+
 	do
 	{
 		// If the connection was aborted for some reason, leave

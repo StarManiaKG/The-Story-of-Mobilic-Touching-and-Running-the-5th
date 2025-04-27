@@ -90,6 +90,9 @@ static struct {
 	{NULL, NULL},
 };
 
+#if 1
+// STAR NOTE: come back here right now stupid
+
 typedef struct
 {
 	int base_shader; // index of base shader_t
@@ -109,6 +112,7 @@ typedef struct
 //static shader_t gl_shaders[NUMSHADERTARGETS*2];
 
 static shadertarget_t gl_shadertargets[NUMSHADERTARGETS];
+#endif
 
 #define WHITESPACE_CHARS " \t"
 

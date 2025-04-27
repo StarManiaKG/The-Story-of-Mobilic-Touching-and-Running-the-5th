@@ -7,6 +7,10 @@ passthru_opts+=\
 	MOBJCONSISTANCY PACKETDROP ZDEBUG\
 	NOUPNP NOEXECINFO\
 
+# ANDROID START #
+include xtra/Makefile.d/xtra.mk
+# ANDROID DONE #
+
 # build with debugging information
 ifdef DEBUGMODE
 PACKETDROP=1
