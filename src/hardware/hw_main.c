@@ -5988,10 +5988,7 @@ void HWR_Startup(void)
 		HWR_SetShaderState();
         CONS_Printf("hit 6:  loading all custom shaders\n");
 		HWR_LoadAllCustomShaders();
-#if 1
-		CONS_Printf("hit 7: toggling palette rendering\n");
 		HWR_TogglePaletteRendering();
-#endif
 	}
 
 	CONS_Printf("OPENGL init-ed!\n");

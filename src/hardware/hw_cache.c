@@ -276,10 +276,6 @@ static void HWR_DrawFlippedColumnInCache(const column_t *patchcol, UINT8 *block,
 					colortemp.s.alpha = alpha;
 					if ((originPatch != NULL) && (originPatch->style != AST_COPY))
 					{
-#if 0
-                        // BITTEN NOTE: bitten temp:
-                        continue;
-#endif
 						RGBA_t rgbatexel;
 						rgbatexel.rgba = *(UINT32 *)dest;
 						colortemp.rgba = ASTBlendTexturePixel(rgbatexel, colortemp, originPatch->style, originPatch->alpha);
@@ -829,7 +825,7 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean chromakeyed)
 		grMipmap = originalMipmap->nextcolormap;
 	}
 
-	if (grMipmap->data == NULL)
+	if (!grMipmap->data)
 		HWR_GenerateTexture(tex, grtex, grMipmap);
 
 	if (!grMipmap->downloaded)
