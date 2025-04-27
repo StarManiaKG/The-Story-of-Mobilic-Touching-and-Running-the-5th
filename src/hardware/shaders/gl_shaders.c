@@ -78,12 +78,16 @@ static PFNglDisableVertexAttribArray pglDisableVertexAttribArray;
 
 gl_shader_t gl_shaders[HWR_MAXSHADERS];
 gl_shader_t gl_usershaders[HWR_MAXSHADERS];
-shadersource_t gl_customshaders[HWR_MAXSHADERS];
+gl_shader_t gl_customshaders[HWR_MAXSHADERS]; // shader_source_t
 gl_shader_t gl_fallback_shader;
 
+// 09102020
 gl_shaderstate_t gl_shaderstate;
 
+#ifdef GL_SHADERS
+// STAR NOTE: ????????
 static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
+#endif
 
 // Shader info
 static float shader_leveltime = 0;
@@ -196,19 +200,18 @@ void Shader_LoadFunctions(void)
 #ifdef HAVE_GLES2
 int Shader_AttribLoc(int loc)
 {
+	glesattribute_t LOC_TO_ATTRIB[glesattribute_max] =
+	{
+		glesattribute_position,     // LOC_POSITION
+		glesattribute_texcoord,     // LOC_TEXCOORD + LOC_TEXCOORD0
+		glesattribute_normal,       // LOC_NORMAL
+		glesattribute_colors,       // LOC_COLORS
+		glesattribute_fadetexcoord, // LOC_TEXCOORD1
+	};
 	gl_shader_t *shader = gl_shaderstate.current;
 	if (shader == NULL)
 		shader = &gl_fallback_shader;
 	int pos, attrib;
-
-	glattribute_t LOC_TO_ATTRIB[glattribute_max] =
-	{
-		glattribute_position,     // LOC_POSITION
-		glattribute_texcoord,     // LOC_TEXCOORD + LOC_TEXCOORD0
-		glattribute_normal,       // LOC_NORMAL
-		glattribute_colors,       // LOC_COLORS
-		glattribute_fadetexcoord, // LOC_TEXCOORD1
-	};
 
 	if (shader == NULL)
 		I_Error("Shader_AttribLoc: shader not set");
@@ -569,9 +572,9 @@ boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	shader->uniforms[gluniform_poly_color] = GETUNI("poly_color");
 	shader->uniforms[gluniform_tint_color] = GETUNI("tint_color");
 	shader->uniforms[gluniform_fade_color] = GETUNI("fade_color");
-	shader->uniforms[gluniform_lighting]   = GETUNI("lighting");
+	shader->uniforms[gluniform_lighting] = GETUNI("lighting");
 	shader->uniforms[gluniform_fade_start] = GETUNI("fade_start");
-	shader->uniforms[gluniform_fade_end]   = GETUNI("fade_end");
+	shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
 
 	// palette rendering
 	shader->uniforms[gluniform_palette_tex] = GETUNI("palette_tex");
@@ -580,7 +583,6 @@ boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 	// misc.
 	shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
-
 #undef GETUNI
 
 	// set permanent uniform values
@@ -600,17 +602,13 @@ boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 #undef UNIFORM_1
 
 #ifdef HAVE_GLES2
-
 #define GETATTRIB(attribute) pglGetAttribLocation(shader->program, attribute)
-
-	shader->gles_attributes[glattribute_position]     = GETATTRIB("a_position");
-	shader->gles_attributes[glattribute_texcoord]     = GETATTRIB("a_texcoord");
-	shader->gles_attributes[glattribute_normal]       = GETATTRIB("a_normal");
-	shader->gles_attributes[glattribute_colors]       = GETATTRIB("a_colors");
-	shader->gles_attributes[glattribute_fadetexcoord] = GETATTRIB("a_fademasktexcoord");
-
+	shader->gles_attributes[glesattribute_position]     = GETATTRIB("a_position");
+	shader->gles_attributes[glesattribute_texcoord]     = GETATTRIB("a_texcoord");
+	shader->gles_attributes[glesattribute_normal]       = GETATTRIB("a_normal");
+	shader->gles_attributes[glesattribute_colors]       = GETATTRIB("a_colors");
+	shader->gles_attributes[glesattribute_fadetexcoord] = GETATTRIB("a_fademasktexcoord");
 #undef GETATTRIB
-
 #endif
 
 	return true;
@@ -726,15 +724,14 @@ void Shader_SetTransform(void)
 
 void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade)
 {
+#ifdef GL_SHADERS
 	gl_shader_t *shader = gl_shaderstate.current;
 
-	if (gl_shadersenabled && (shader != NULL) && GLExtension_shaders)
+	if (gl_shadersenabled && (shader != NULL) && pglUseProgram)
 	{
 		if (!shader->program)
 		{
-#ifndef HAVE_GLES2
 			pglUseProgram(0);
-#endif
 			return;
 		}
 
@@ -793,6 +790,12 @@ void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *t
 		#undef UNIFORM_3
 		#undef UNIFORM_4
 	}
+#else
+	(void)Surface;
+	(void)poly;
+	(void)tint;
+	(void)fade;
+#endif
 }
 
 void Shader_SetSampler(gluniform_t uniform, GLint value)

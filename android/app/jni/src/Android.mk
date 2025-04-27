@@ -7,8 +7,15 @@ LOCAL_MODULE := main
 # Paths
 
 SRB2_PATH := ../../../..
+
 SRC_MAIN := $(SRB2_PATH)/src
 SRC_JNI := .
+
+SRC_HWR := $(SRC_MAIN)/hardware/
+SRC_SDL := $(SRC_MAIN)/sdl/
+
+SRC_APK := $(SRC_MAIN)/android/
+SRC_XTRA := $(SRC_MAIN)/xtra/
 
 ifeq ($(OS),Windows_NT)
 WINDOWSHELL=1
@@ -34,10 +41,9 @@ LOCAL_CFLAGS += -DUNIXCOMMON -DLINUX \
 
 # Source files
 
-SRC_HWR := $(SRC_MAIN)/hardware/
-SRC_SDL := $(SRC_MAIN)/sdl/
-
 LOCAL_SRC_FILES := $(call List,$(LOCAL_PATH)/$(SRC_JNI)/Sourcefile)
+LOCAL_SRC_FILES += $(call List,$(LOCAL_PATH)/$(SRC_APK)/Sourcefile)
+LOCAL_SRC_FILES += $(call List,$(LOCAL_PATH)/$(SRC_XTRA)/Sourcefile)
 LOCAL_SRC_FILES += $(call List,$(LOCAL_PATH)/$(SRC_MAIN)/Sourcefile)
 LOCAL_SRC_FILES += $(call List,$(LOCAL_PATH)/$(SRC_MAIN)/blua/Sourcefile)
 LOCAL_SRC_FILES += $(call List,$(LOCAL_PATH)/$(SRC_MAIN)/netcode/Sourcefile)

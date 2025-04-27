@@ -34,10 +34,6 @@
 #include "hwsym_sdl.h"
 #include "../m_argv.h"
 
-//PFNglClear pglClear;
-//PFNglGetIntegerv pglGetIntegerv;
-//PFNglGetString pglGetString;
-
 /**	\brief SDL video display surface
 */
 SDL_GLContext sdlglcontext = 0;
