@@ -5984,9 +5984,7 @@ void HWR_Startup(void)
 		// STAR NOTE: helps you further test bitten
 		gl_shadersavailable = HWR_InitShaders();
         //gl_shadersavailable = false;
-        CONS_Printf("hit 5: setting shader state\n");
 		HWR_SetShaderState();
-        CONS_Printf("hit 6:  loading all custom shaders\n");
 		HWR_LoadAllCustomShaders();
 		HWR_TogglePaletteRendering();
 	}
