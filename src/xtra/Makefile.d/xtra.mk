@@ -30,16 +30,12 @@ ifndef NOHW
     ifeq (, $(findstring -DHAVE_GLES2, $(CURRENT_OPTS)))
       $(info BRO PLEASE)
       sources+=hardware/r_gles/r_gles2.c sdl/ogl_es_sdl.c
-    endif
-    ifeq (, $(findstring -DHAVE_GLES, $(CURRENT_OPTS)))
+    else ifeq (, $(findstring -DHAVE_GLES, $(CURRENT_OPTS)))
       $(info BRO PLEASE GLES1)
       sources+=hardware/r_gles/r_gles1.c sdl/ogl_es_sdl.c
-    endif
-    ifneq (, $(findstring -DHAVE_GLES2, $(CURRENT_OPTS)))
-    ifneq (, $(findstring -DHAVE_GLES, $(CURRENT_OPTS)))
+    else
       $(info BRO PLEASE GLES2)
       sources+=hardware/r_opengl/r_opengl.c sdl/ogl_sdl.c
-    endif
     endif
   endif
 endif
