@@ -42,7 +42,7 @@ fmatrix4_t modelMatrix;
 
 static GLint viewport[4];
 
-static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
+//GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
 
 static void VertexAttribPointerInternal(int attrib, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer, const char *function, const int line)
 {
@@ -70,7 +70,7 @@ boolean GLBackend_LoadFunctions(void)
 	Shader_LoadFunctions();
 	Shader_CleanPrograms();
 
-#if 0
+#if 1
 	return Shader_Compile();
 #else
 	return true;
@@ -94,38 +94,10 @@ boolean GLBackend_LoadExtraFunctions(void)
 
 EXPORT boolean HWRAPI(InitShaders) (void)
 {
-#ifndef GL_SHADERS
+#ifdef GL_SHADERS
+	return Shader_Init();
+#else
 	return false;
-#else
-#if 0
-	return Shader_Compile();
-#else
-#if 0
-	if (!GLBackend_useprogram)
-#else
-	if (!GLBackend_GetFunction("glUseProgram"))
-#endif
-		return false;
-
-#if 0
-	gl_fallback_shader.vertex_shader = Z_StrDup(GLSL_FALLBACK_VERTEX_SHADER);
-	gl_fallback_shader.gl_fallback_shader = Z_StrDup(GLSL_FALLBACK_FRAGMENT_SHADER);
-	if (!Shader_CompileProgram(&gl_fallback_shader, -1))
-	{
-		GL_MSG_Error("Failed to compile the fallback shader program!\n");
-		return false;
-	}
-#else
-	gl_shader_t *shader = &gl_shaders[SHADER_FLOOR];
-	if (!Shader_CompileProgram(shader, -1))
-	{
-		GL_MSG_Error("Failed to compile the fallback shader program!\n");
-		return false;
-	}
-#endif
-
-	return true;
-#endif
 #endif
 }
 
@@ -1798,20 +1770,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, int width, int height)
 EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
 {
 	GLenum internalFormat;
-#if 0
-	if (gl_version[0] == '1' || gl_version[0] == '2')
-	{
-		// if the OpenGL version is below 3.0, then the GL_R8 format may not be available.
-		// so use GL_LUMINANCE8 instead to get a single component 8-bit format
-		// (it is possible to have access to shaders even in some OpenGL 1.x systems,
-		// so palette rendering can still possibly be achieved there)
-		internalFormat = GL_LUMINANCE8;
-	}
-	else
-	{
-		internalFormat = GL_R8;
-	}
-#endif
+	internalFormat = GL_LUMINANCE;
 	if (!paletteLookupTex)
 		pglGenTextures(1, &paletteLookupTex);
 	pglActiveTexture(GL_TEXTURE1);

@@ -5983,26 +5983,17 @@ void HWR_Startup(void)
 		HWR_InitLight();
 #endif
 
-#if 0
 		// STAR NOTE: helps you further test bitten
 		gl_shadersavailable = HWR_InitShaders();
         //gl_shadersavailable = false;
         CONS_Printf("hit 5: setting shader state\n");
 		HWR_SetShaderState();
-#if 0
         CONS_Printf("hit 6:  loading all custom shaders\n");
 		HWR_LoadAllCustomShaders();
-#endif
-#if 0
-		CONS_Printf("hit 7: toggling palette rendering\n");
 		HWR_TogglePaletteRendering();
-#endif
-#endif
 	}
 
-#if 1
 	CONS_Printf("OPENGL init-ed!\n");
-#endif
 
 	gl_init = true;
 }

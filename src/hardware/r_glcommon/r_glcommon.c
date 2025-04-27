@@ -1474,9 +1474,6 @@ void GLExtension_Init(void)
 	GLExtension_fragment_program = true;
 #endif
 
-#if 0
-	GLBackend_useprogram = GLBackend_GetFunction("glUseProgram");
-#endif
 
 	while (ExtensionList[i].name)
 	{
