@@ -278,7 +278,8 @@ boolean Shader_DisableVertexAttribArray(int attrib)
 }
 #endif
 
-boolean Shader_Init() {
+boolean Shader_Init(void)
+{
 #ifdef GL_SHADERS
 #ifndef HAVE_GLES2
 	if (!pglUseProgram)

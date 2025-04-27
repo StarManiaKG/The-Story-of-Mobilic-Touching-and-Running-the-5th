@@ -144,7 +144,7 @@ void Shader_UnSet(void);
 #ifdef HAVE_GLES2
 void Shader_SetTransform(void);
 #endif
-boolean Shader_Init();
+boolean Shader_Init(void);
 void Shader_Load(int slot, char *code, hwdshaderstage_t stage);
 
 boolean Shader_Compile(void);
