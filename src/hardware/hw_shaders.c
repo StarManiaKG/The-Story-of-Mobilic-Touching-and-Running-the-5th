@@ -138,7 +138,6 @@ boolean HWR_InitShaders(void)
 		gl_shadertargets[i].custom_shader = -1;
 	}
 	HWR_CompileShaders();
-	CONS_Printf("\nhit 5: shaders compiled\n");
 
 	return true;
 }
