@@ -1666,7 +1666,7 @@ EXPORT void HWRAPI(DoTintedWipe) (boolean isfadingin, boolean istowhite)
 EXPORT void HWRAPI(MakeScreenTexture) (int tex)
 {
 	INT32 texsize = 512;
-	boolean firstTime = (screentexture == 0);
+	boolean firstTime = (screenTextures[tex] == 0);
 
 	// look for power of two that is large enough for the screen
 	while (texsize < screen_width || texsize < screen_height)
@@ -1674,8 +1674,8 @@ EXPORT void HWRAPI(MakeScreenTexture) (int tex)
 
 	// Create screen texture
 	if (firstTime)
-		pglGenTextures(1, &screentexture);
-	pglBindTexture(GL_TEXTURE_2D, screentexture);
+		pglGenTextures(1, &screenTextures[tex]);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
 	if (firstTime)
 	{
@@ -1688,7 +1688,7 @@ EXPORT void HWRAPI(MakeScreenTexture) (int tex)
 	else
 		pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, texsize, texsize);
 
-	tex_downloaded = screentexture;
+	tex_downloaded = screenTextures[tex];
 }
 
 EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, int width, int height)
@@ -1751,6 +1751,8 @@ EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, int width, int height)
 	clearColour.red = clearColour.green = clearColour.blue = 0;
 	clearColour.alpha = 1;
 	ClearBuffer(true, false, &clearColour);
+	SetBlend(PF_NoDepthTest);
+
 	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
 
 	Shader_SetUniforms(NULL, &white, NULL, NULL);
@@ -1764,7 +1766,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, int width, int height)
 #endif
 
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-	tex_downloaded = finalScreenTexture;
+	tex_downloaded = screenTextures[tex];
 }
 
 EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
