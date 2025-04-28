@@ -15,7 +15,7 @@ SRC_HWR := $(SRC_MAIN)/hardware/
 SRC_SDL := $(SRC_MAIN)/sdl/
 
 SRC_APK := $(SRC_MAIN)/android/
-SRC_XTRA := $(LOCAL_PATH)/$(SRC_MAIN)/xtra
+SRC_XTRA := $(SRC_MAIN)/xtra
 
 ifeq ($(OS),Windows_NT)
 WINDOWSHELL=1
@@ -27,7 +27,7 @@ ANDROID := 1
 
 include $(MAKE_DIR)/platform.mk
 include $(MAKE_DIR)/util.mk
-include $(SRC_XTRA)/Makefile.d/xtra.mk
+include $(LOCAL_PATH)/$(SRC_XTRA)/Makefile.d/xtra.mk
 
 # Compile flags
 
