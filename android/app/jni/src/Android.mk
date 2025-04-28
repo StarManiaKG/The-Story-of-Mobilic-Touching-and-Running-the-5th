@@ -15,7 +15,7 @@ SRC_HWR := $(SRC_MAIN)/hardware/
 SRC_SDL := $(SRC_MAIN)/sdl/
 
 SRC_APK := $(SRC_MAIN)/android/
-SRC_XTRA := $(SRC_MAIN)/xtra
+SRC_XTRA := $(LOCAL_PATH)/$(SRC_MAIN)/xtra
 
 ifeq ($(OS),Windows_NT)
 WINDOWSHELL=1
