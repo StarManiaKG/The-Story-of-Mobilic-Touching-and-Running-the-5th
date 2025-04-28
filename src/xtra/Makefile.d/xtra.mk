@@ -4,12 +4,13 @@
 #
 
 CURRENT_OPTS := 
+CURRENT_SOURCES :=
 
 undefine NOHW
 HWRENDER=1
 
-sources+=w_handle.c
-sources+=\
+CURRENT_SOURCES+=w_handle.c
+CURRENT_SOURCES+=\
 	$(call List,android/Sourcefile)\
 	$(call List,xtra/Sourcefile)\
 
@@ -29,13 +30,19 @@ ifndef NOHW
   ifeq (, $(findstring -DHWRENDER, $(CURRENT_OPTS)))
     ifeq (, $(findstring -DHAVE_GLES2, $(CURRENT_OPTS)))
       $(info BRO PLEASE)
-      sources+=hardware/r_gles/r_gles2.c sdl/ogl_es_sdl.c
+      CURRENT_SOURCES+=hardware/r_gles/r_gles2.c sdl/ogl_es_sdl.c
     else ifeq (, $(findstring -DHAVE_GLES, $(CURRENT_OPTS)))
       $(info BRO PLEASE GLES1)
-      sources+=hardware/r_gles/r_gles1.c sdl/ogl_es_sdl.c
+      CURRENT_SOURCES+=hardware/r_gles/r_gles1.c sdl/ogl_es_sdl.c
     else
       $(info BRO PLEASE GLES2)
-      sources+=hardware/r_opengl/r_opengl.c sdl/ogl_sdl.c
+      CURRENT_SOURCES+=hardware/r_opengl/r_opengl.c sdl/ogl_sdl.c
     endif
   endif
+endif
+
+ifndef ANDROID
+  LOCAL_SRC_FILES+=$(CURRENT_SOURCES)
+else
+  sources+=$(CURRENT_SOURCES)
 endif

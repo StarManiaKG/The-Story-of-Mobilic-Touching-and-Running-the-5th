@@ -209,13 +209,17 @@ int Shader_AttribLoc(int loc)
 		glesattribute_fadetexcoord, // LOC_TEXCOORD1
 	};
 	gl_shader_t *shader = gl_shaderstate.current;
-	if (shader == NULL)
-		shader = &gl_fallback_shader;
 	int pos, attrib;
 
 	if (shader == NULL)
-		I_Error("Shader_AttribLoc: shader not set");
+	{
+		CONS_Printf("Shader_AttribLoc: current shader invalid, moving to fallback shader\n");
+		shader = &gl_fallback_shader;
+		if (shader == NULL)
+			I_Error("Shader_AttribLoc: shader not set");
+	}
 
+	(void)pos;
 	attrib = LOC_TO_ATTRIB[loc];
 
 	return shader->gles_attributes[attrib];
@@ -378,6 +382,7 @@ void Shader_Set(int type)
 
 
 #ifdef HAVE_GLES2
+	(void)shader;
 	Shader_SetTransform();
 	gl_shadersenabled = true;
 #else
