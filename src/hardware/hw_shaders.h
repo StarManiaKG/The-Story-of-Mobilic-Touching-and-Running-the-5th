@@ -387,6 +387,7 @@
 //
 
 #define GLSL_FALLBACK_VERTEX_SHADER \
+	"#version 100" \
 	"attribute vec3 a_position;\n" \
 	"attribute vec2 a_texcoord;\n" \
 	"attribute vec2 a_fademasktexcoord;\n" \
@@ -411,6 +412,7 @@
 //
 
 #define GLSL_FALLBACK_FRAGMENT_SHADER \
+	"#version 100" \
 	"precision mediump float;\n" \
 	"varying vec2 v_texcoord;\n" \
 	"varying vec3 v_normal;\n" \

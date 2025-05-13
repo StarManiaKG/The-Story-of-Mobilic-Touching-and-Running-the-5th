@@ -67,8 +67,6 @@ boolean GLBackend_Init(void)
 */
 boolean OglSdlSurface(INT32 w, INT32 h)
 {
-	GLBackend_SetSurface(w, h);
-
 	glanisotropicmode_cons_t[1].value = maximumAnisotropy;
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 

@@ -2668,7 +2668,7 @@ void VID_StartupOpenGL(void)
 	HWD.pfnDeleteModelData  = hwSym("DeleteModelData",NULL);
 #endif
 
-	if (HWD.pfnInit())
+	if (GLBackend_Init())
 		vid.glstate = VID_GL_LIBRARY_LOADED;
 	else
 	{

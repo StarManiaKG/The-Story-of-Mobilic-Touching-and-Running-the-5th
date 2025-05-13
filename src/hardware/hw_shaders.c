@@ -502,6 +502,7 @@ static const char version_directives[][14] = {
 	"#version 130\n",
 	"#version 120\n",
 	"#version 110\n",
+	"#version 100\n",
 };
 
 static boolean HWR_VersionDirectiveExists(const char* source)

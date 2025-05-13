@@ -70,7 +70,7 @@ boolean GLBackend_LoadFunctions(void)
 	Shader_LoadFunctions();
 	Shader_CleanPrograms();
 
-#if 1
+#if 0
 	return Shader_Compile();
 #else
 	return true;
@@ -618,9 +618,8 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 
 	if (update)
 		pglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-    // bitten temp
-	//else
-		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+	else
+		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 
 	if (MipmapEnabled)
 		pglGenerateMipmap(GL_TEXTURE_2D);
@@ -1774,6 +1773,7 @@ EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
 	if (!paletteLookupTex)
 		pglGenTextures(1, &paletteLookupTex);
 	pglActiveTexture(GL_TEXTURE1);
+#if 1 // bitten temp
 	pglBindTexture(GL_TEXTURE_3D, paletteLookupTex);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1783,6 +1783,7 @@ EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
 #else
 		0, 0, GL_UNSIGNED_BYTE, lut);
 #endif
+	#endif
 	pglActiveTexture(GL_TEXTURE0);
 }
 

@@ -78,7 +78,6 @@ static PFNglDisableVertexAttribArray pglDisableVertexAttribArray;
 
 gl_shader_t gl_shaders[HWR_MAXSHADERS];
 gl_shader_t gl_usershaders[HWR_MAXSHADERS];
-gl_shader_t gl_customshaders[HWR_MAXSHADERS]; // shader_source_t
 gl_shader_t gl_fallback_shader;
 
 // 09102020
@@ -284,6 +283,7 @@ boolean Shader_Init() {
 	if (!pglUseProgram)
 		return false;
 #endif
+	#if 0
 
 	gl_fallback_shader.vertex = Z_StrDup(GLSL_FALLBACK_VERTEX_SHADER);
 	gl_fallback_shader.fragment = Z_StrDup(GLSL_FALLBACK_FRAGMENT_SHADER);
@@ -293,6 +293,7 @@ boolean Shader_Init() {
 		GL_MSG_Error("Failed to compile the fallback shader program!\n");
 		return false;
 	}
+	#endif
 
 	return true;
 #else
@@ -454,8 +455,12 @@ boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	GLuint gl_vertShader = 0;
 	GLuint gl_fragShader = 0;
 	GLint result;
-	const GLchar *vert_shader = shader->vertex;
-	const GLchar *frag_shader = shader->fragment;
+	const GLchar *vert_shader = gl_shadersources[i].vertex;
+	const GLchar *frag_shader = gl_shadersources[i].fragment;
+	// BITTEN DEBUG
+	// DUMBASS IF YOU LEAVE THIS IN THE FINAL BUILD... WHATS WRONG WITH YOU
+	extern customshaderxlat_t shaderxlat[];
+	CONS_Printf("SHADER \"%s\"\n", shaderxlat[i].type);
 
 	if (shader->program)
 		pglDeleteProgram(shader->program);
@@ -616,58 +621,35 @@ boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 boolean Shader_Compile(void)
 {
-#if 0
+#if 1
 	GLint i;
 
 	if (!GLExtension_shaders)
 		return false;
 
-	gl_customshaders[SHADER_DEFAULT].vertex = NULL;
-	gl_customshaders[SHADER_DEFAULT].fragment = NULL;
-
 	for (i = 0; gl_shadersources[i].vertex && gl_shadersources[i].fragment; i++)
 	{
-		gl_shader_t *shader, *usershader;
-		const GLchar *vert_shader = gl_shadersources[i].vertex;
-		const GLchar *frag_shader = gl_shadersources[i].fragment;
+		gl_shader_t *shader;
 
 		if (i >= HWR_MAXSHADERS)
 			break;
 
 		shader = &gl_shaders[i];
-		usershader = &gl_usershaders[i];
 
 		if (shader->program)
-			gl_DeleteProgram(shader->program);
-		if (usershader->program)
-			gl_DeleteProgram(usershader->program);
+			pglDeleteProgram(shader->program);
 
 		shader->program = 0;
-		usershader->program = 0;
 
-		if (!Shader_CompileProgram(shader, i, vert_shader, frag_shader))
+		if (!Shader_CompileProgram(shader, i))
 		{
 			shader->program = 0;
+#if 0 // bitten temp
 #ifdef HAVE_GLES2
 			if (i == SHADER_DEFAULT)
 				return false;
 #endif
-		}
-
-		// Compile custom shader
-		if ((i == SHADER_DEFAULT) || !(gl_customshaders[i].vertex || gl_customshaders[i].fragment))
-			continue;
-
-		// 18032019
-		if (gl_customshaders[i].vertex)
-			vert_shader = gl_customshaders[i].vertex;
-		if (gl_customshaders[i].fragment)
-			frag_shader = gl_customshaders[i].fragment;
-
-		if (!Shader_CompileProgram(usershader, i, vert_shader, frag_shader))
-		{
-			GL_MSG_Warning("Shader_Compile: Could not compile custom shader program for %s\n", HWR_GetShaderName(i));
-			usershader->program = 0;
+#endif
 		}
 	}
 #else
