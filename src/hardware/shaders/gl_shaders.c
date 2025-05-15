@@ -285,7 +285,7 @@ boolean Shader_Init() {
 	if (!pglUseProgram)
 		return false;
 #endif
-	#if 0
+	#if 1
 
 	gl_fallback_shader.vertex = Z_StrDup(GLSL_FALLBACK_VERTEX_SHADER);
 	gl_fallback_shader.fragment = Z_StrDup(GLSL_FALLBACK_FRAGMENT_SHADER);
@@ -446,7 +446,7 @@ static void Shader_CompileError(const char *message, GLuint program, INT32 shade
 		pglGetShaderInfoLog(program, logLength, NULL, infoLog);
 	}
 
-	Shader_ErrorMessage("Shader_CompileProgram: %s (%s)\n%s\n", message, HWR_GetShaderName(shadernum), (infoLog ? infoLog : ""));
+	Shader_ErrorMessage("Shader_CompileProgram: %s (%s)\n%s\n", message, (shadernum!=-1)? HWR_GetShaderName(shadernum) : "FallbackShader", (infoLog ? infoLog : ""));
 
 	if (infoLog)
 		free(infoLog);
@@ -457,12 +457,13 @@ boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	GLuint gl_vertShader = 0;
 	GLuint gl_fragShader = 0;
 	GLint result;
-	const GLchar *vert_shader = gl_shadersources[i].vertex;
-	const GLchar *frag_shader = gl_shadersources[i].fragment;
+	const GLchar *vert_shader = (i != -1) ? gl_shadersources[i].vertex : shader->vertex;
+	const GLchar *frag_shader = (i != -1) ? gl_shadersources[i].fragment : shader->fragment;
+
 	// BITTEN DEBUG
 	// DUMBASS IF YOU LEAVE THIS IN THE FINAL BUILD... WHATS WRONG WITH YOU
 	extern customshaderxlat_t shaderxlat[];
-	CONS_Printf("SHADER \"%s\"\n", shaderxlat[i].type);
+	CONS_Printf("SHADER \"%s\"\n", (i != -1) ? shaderxlat[i].type : "FallbackShader");
 
 	if (shader->program)
 		pglDeleteProgram(shader->program);
@@ -631,26 +632,29 @@ boolean Shader_Compile(void)
 
 	for (i = 0; gl_shadersources[i].vertex && gl_shadersources[i].fragment; i++)
 	{
-		gl_shader_t *shader;
+		gl_shader_t *shader, *usershader;
 
 		if (i >= HWR_MAXSHADERS)
 			break;
 
 		shader = &gl_shaders[i];
+		usershader = &gl_usershaders[i];
 
 		if (shader->program)
 			pglDeleteProgram(shader->program);
+		if (usershader->program)
+			pglDeleteProgram(usershader->program);
+
 
 		shader->program = 0;
+		usershader->program = 0;
 
 		if (!Shader_CompileProgram(shader, i))
 		{
 			shader->program = 0;
-#if 0 // bitten temp
 #ifdef HAVE_GLES2
-			if (i == SHADER_DEFAULT)
+			if (i == SHADER_FLOOR)
 				return false;
-#endif
 #endif
 		}
 	}

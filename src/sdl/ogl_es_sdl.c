@@ -126,8 +126,8 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
-#if 0
-	DrawFinalScreenTexture(realwidth, realheight);
+#if 1
+	DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
 #else
 	// STAR NOTE: hi opengles fixes
 	HWR_DrawScreenFinalTexture(realwidth, realheight);

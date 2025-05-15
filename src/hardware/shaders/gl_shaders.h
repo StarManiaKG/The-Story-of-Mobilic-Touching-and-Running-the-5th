@@ -120,8 +120,8 @@ typedef struct gl_shader_s
 #endif
 
 extern gl_shader_t gl_shaders[HWR_MAXSHADERS];
+// i fucked up and accidently removed this from gl_shaders.c, fix later though i doubt anyone will fucking care -bitten
 extern gl_shader_t gl_usershaders[HWR_MAXSHADERS];
-extern gl_shader_t gl_customshaders[HWR_MAXSHADERS]; //shader_source_t
 #if 1
 // STAR NOTE: i'm not paid enough to understand this
 extern gl_shader_t gl_fallback_shader;
