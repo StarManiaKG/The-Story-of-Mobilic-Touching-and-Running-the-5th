@@ -1130,6 +1130,7 @@ void GLTexture_Flush(void)
 //			a new size
 void GLTexture_FlushScreen(void)
 {
+	// bitten note: star removed some of the fucking code i need here for screenTextures[]... THANKS STAR
 	if (screentexture)
 		pglDeleteTextures(1, &screentexture);
 	if (startScreenWipe)

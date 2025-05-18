@@ -397,7 +397,9 @@ EXPORT void HWRAPI(ReadScreenTexture) (int tex, UINT8 *dst_data)
 // -----------------+
 EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip)
 {
-	pglViewport(minx, screen_height-maxy, maxx-minx, maxy-miny);
+	// bitten temp, seems this will cause black screens.
+	// not sure if its because the mant is different now or whan
+	//pglViewport(minx, screen_height-maxy, maxx-minx, maxy-miny);
 	near_clipping_plane = nearclip;
 
 	lzml_matrix4_identity(projMatrix);
@@ -418,8 +420,7 @@ EXPORT void HWRAPI(ClearBuffer) (FBOOLEAN ColorMask, FBOOLEAN DepthMask, FRGBAFl
 	if (ColorMask)
 	{
 		if (ClearColor)
-			// bitten clear debuggggg
-			pglClearColor(0xff,
+			pglClearColor(ClearColor->red,
 						  ClearColor->green,
 						  ClearColor->blue,
 						  ClearColor->alpha);
@@ -1629,8 +1630,8 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD pol
 	fix[6] = xfix;
 	fix[7] = 0.0f;
 
-	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	pglViewport(0, 0, realwidth, realheight);
+	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 	PreparePolygon(surf, NULL, surf ? polyflags : (PF_NoDepthTest));
@@ -1670,7 +1671,7 @@ EXPORT void HWRAPI(DoTintedWipe) (boolean isfadingin, boolean istowhite)
 EXPORT void HWRAPI(MakeScreenTexture) (int tex)
 {
 	INT32 texsize = 512;
-	boolean firstTime = (screentexture == 0);
+	boolean firstTime = (screenTextures[tex] == 0);
 
 	// look for power of two that is large enough for the screen
 	while (texsize < screen_width || texsize < screen_height)
@@ -1755,7 +1756,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, int width, int height)
 	clearColour.red = clearColour.green = clearColour.blue = 0;
 	clearColour.alpha = 1;
 	ClearBuffer(true, false, &clearColour);
-	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
 	Shader_SetUniforms(NULL, &white, NULL, NULL);
 
@@ -1768,7 +1769,7 @@ EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, int width, int height)
 #endif
 
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-	tex_downloaded = finalScreenTexture;
+	tex_downloaded = screenTextures[tex];
 }
 
 EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
@@ -1778,7 +1779,7 @@ EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
 	if (!paletteLookupTex)
 		pglGenTextures(1, &paletteLookupTex);
 	pglActiveTexture(GL_TEXTURE1);
-#if 1 // bitten temp
+#if 0 // bitten temp
 	pglBindTexture(GL_TEXTURE_3D, paletteLookupTex);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1856,7 +1857,7 @@ EXPORT void HWRAPI(ClearLightTables) (void)
 
 EXPORT void HWRAPI(SetScreenPalette) (RGBA_t *palette)
 {
-#if 1
+#if 0
 	(void)palette;
 	return;
 #else
@@ -1873,7 +1874,7 @@ EXPORT void HWRAPI(SetScreenPalette) (RGBA_t *palette)
 		if (!screenPaletteTex)
 			pglGenTextures(1, &screenPaletteTex);
 		pglActiveTexture(GL_TEXTURE2);
-#if 1
+#if 0
 		pglBindTexture(GL_TEXTURE_1D, screenPaletteTex);
 		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

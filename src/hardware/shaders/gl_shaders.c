@@ -115,7 +115,7 @@ static struct {
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Model shader
-	{GLSL_MODEL_VERTEX_SHADER, GLSL_MODEL_FRAGMENT_SHADER},
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_FRAGMENT_SHADER},
 
 	// Water shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WATER_FRAGMENT_SHADER},
@@ -124,7 +124,7 @@ static struct {
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_FOG_FRAGMENT_SHADER},
 
 	// Sky shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SKY_FRAGMENT_SHADER},
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_FRAGMENT_SHADER},
 
 	// Palette postprocess shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_PALETTE_POSTPROCESS_FRAGMENT_SHADER},
@@ -139,16 +139,16 @@ static struct {
     {GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
 
         // Floor shader with alpha test
-    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
 
         // Wall shader with alpha test
-    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
 
         // Sprite shader with alpha test
-    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
 
         // Model shader with alpha test
-    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
 
         // Model lighting shader with alpha test
     {GLSL_MODEL_LIGHTING_VERTEX_SHADER, GLSL_MODEL_LIGHTING_ALPHA_TEST},
@@ -211,7 +211,10 @@ int Shader_AttribLoc(int loc)
 	};
 	gl_shader_t *shader = gl_shaderstate.current;
 	if (shader == NULL)
+	{
+		CONS_Printf("Shader not set, reverting to fallback shader (Shader_AttribLoc)\n");
 		shader = &gl_fallback_shader;
+	}
 	int pos, attrib;
 
 	if (shader == NULL)
@@ -670,7 +673,7 @@ boolean Shader_Compile(void)
 #endif
 
 #ifdef HAVE_GLES2
-	Shader_Set(SHADER_FLOOR);
+	Shader_Set(SHADER_ALPHA_TEST);
 	pglUseProgram(gl_shaderstate.program);
 	gl_shaderstate.changed = false;
 #endif
