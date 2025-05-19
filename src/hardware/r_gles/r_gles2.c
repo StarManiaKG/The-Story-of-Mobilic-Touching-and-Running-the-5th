@@ -397,9 +397,7 @@ EXPORT void HWRAPI(ReadScreenTexture) (int tex, UINT8 *dst_data)
 // -----------------+
 EXPORT void HWRAPI(GClipRect) (INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip)
 {
-	// bitten temp, seems this will cause black screens.
-	// not sure if its because the mant is different now or whan
-	//pglViewport(minx, screen_height-maxy, maxx-minx, maxy-miny);
+	pglViewport(minx, screen_height-maxy, maxx-minx, maxy-miny);
 	near_clipping_plane = nearclip;
 
 	lzml_matrix4_identity(projMatrix);
@@ -615,10 +613,8 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 	else
 		GLBackend_SetClamp2D(GL_TEXTURE_WRAP_T);
 
-#if 0 // GL_INVALID_VALUE in glTexParameter(param) - bitten
 	if (GLExtension_texture_filter_anisotropic)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropic_filter);
-#endif
 
 	if (update)
 		pglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
@@ -1598,8 +1594,9 @@ static void DoWipe(boolean tinted, boolean isfadingin, boolean istowhite)
 EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 {
 	float xfix, yfix;
-	extern Uint16 realwidth, realheight;
 	INT32 texsize = 512;
+	extern Uint16 realwidth, realheight;
+	
 
 	const float screenVerts[12] =
 	{
@@ -1874,7 +1871,7 @@ EXPORT void HWRAPI(SetScreenPalette) (RGBA_t *palette)
 		if (!screenPaletteTex)
 			pglGenTextures(1, &screenPaletteTex);
 		pglActiveTexture(GL_TEXTURE2);
-#if 0
+#if 1
 		pglBindTexture(GL_TEXTURE_1D, screenPaletteTex);
 		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

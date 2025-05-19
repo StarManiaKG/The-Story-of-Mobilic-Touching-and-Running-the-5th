@@ -5558,9 +5558,9 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 
 	FRGBAFloat ClearColor;
 
-	ClearColor.red = 255.0f; // bitten fucking debugggs shiiiiiiitttttttt
+	ClearColor.red = 0.0f; // bitten fucking debugggs shiiiiiiitttttttt
 	ClearColor.green = 0.0f;
-	ClearColor.blue = 255.0f;
+	ClearColor.blue = 0.0f;
 	ClearColor.alpha = 1.0f;
 
 	if (cv_glshaders.value)

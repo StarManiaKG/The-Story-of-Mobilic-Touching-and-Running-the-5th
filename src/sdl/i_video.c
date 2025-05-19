@@ -366,9 +366,12 @@ static SDL_bool Impl_RenderContextDestroy(void)
 	if (rendermode == render_opengl)
 	{
 		SDL_GL_MakeCurrent(window, sdlglcontext);
+		OglSdlSurface(realwidth, realheight);
+		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+		glanisotropicmode_cons_t[1].value = maximumAnisotropy;
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 
-		OglSdlSurface(realwidth, realheight);
+		HWR_Startup();
 
 #if defined(__ANDROID__)
 		if (vid.glstate == VID_GL_LIBRARY_LOADED)

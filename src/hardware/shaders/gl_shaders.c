@@ -124,7 +124,7 @@ static struct {
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_FOG_FRAGMENT_SHADER},
 
 	// Sky shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_FRAGMENT_SHADER},
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SKY_FRAGMENT_SHADER},
 
 	// Palette postprocess shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_PALETTE_POSTPROCESS_FRAGMENT_SHADER},
@@ -139,16 +139,16 @@ static struct {
     {GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
 
         // Floor shader with alpha test
-    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
 
         // Wall shader with alpha test
-    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
 
         // Sprite shader with alpha test
-    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
 
         // Model shader with alpha test
-    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
+    {GLSL_MODEL_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
 
         // Model lighting shader with alpha test
     {GLSL_MODEL_LIGHTING_VERTEX_SHADER, GLSL_MODEL_LIGHTING_ALPHA_TEST},
@@ -212,7 +212,6 @@ int Shader_AttribLoc(int loc)
 	gl_shader_t *shader = gl_shaderstate.current;
 	if (shader == NULL)
 	{
-		CONS_Printf("Shader not set, reverting to fallback shader (Shader_AttribLoc)\n");
 		shader = &gl_fallback_shader;
 	}
 	int pos, attrib;
@@ -288,7 +287,7 @@ boolean Shader_Init() {
 	if (!pglUseProgram)
 		return false;
 #endif
-	#if 1
+	#if 0
 
 	gl_fallback_shader.vertex = Z_StrDup(GLSL_FALLBACK_VERTEX_SHADER);
 	gl_fallback_shader.fragment = Z_StrDup(GLSL_FALLBACK_FRAGMENT_SHADER);
@@ -460,8 +459,8 @@ boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	GLuint gl_vertShader = 0;
 	GLuint gl_fragShader = 0;
 	GLint result;
-	const GLchar *vert_shader = (i != -1) ? gl_shadersources[i].vertex : shader->vertex;
-	const GLchar *frag_shader = (i != -1) ? gl_shadersources[i].fragment : shader->fragment;
+	const GLchar *vert_shader = gl_shadersources[i].vertex;
+	const GLchar *frag_shader = gl_shadersources[i].fragment;
 
 	// BITTEN DEBUG
 	// DUMBASS IF YOU LEAVE THIS IN THE FINAL BUILD... WHATS WRONG WITH YOU
