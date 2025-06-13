@@ -309,8 +309,8 @@ boolean GLBackend_LoadFunctions(void)
 
 #if 0
 	GETOPENGLFUNC(ClearDepthf)
-#endif
 	GETOPENGLFUNC(DepthRangef)
+#endif
     GETOPENGLFUNC(TexImage3D)
 
 	Shader_LoadFunctions();
