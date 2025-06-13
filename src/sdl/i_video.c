@@ -2592,7 +2592,7 @@ void I_StartupGraphics(void)
 	if (M_CheckParm("-nomousegrab"))
 		mousegrabok = SDL_FALSE;
 
-#if 0
+#if 1
 	// STAR NOTE: hi
 	realwidth = vid.width;
 	realheight = vid.height;

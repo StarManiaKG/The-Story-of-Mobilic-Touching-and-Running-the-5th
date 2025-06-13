@@ -6,36 +6,39 @@
 CURRENT_OPTS:= 
 CURRENT_SOURCES:=
 
-undefine NOHW
-HWRENDER=1
-
 ifndef ANDROID
+  opts+=-DTOUCHINPUTS -DNATIVESCREENRES # -DHAVE_WHANDLE
+  #opts+=-DHWRENDER -DHAVE_GLES -DHAVE_GLES2
   CURRENT_OPTS+=$(opts)
+  #CURRENT_SOURCES:=$(sources)
 else
   CURRENT_OPTS+=$(LOCAL_CFLAGS)
+  #CURRENT_SOURCES:=$(LOCAL_SRC_FILES)
 endif
 
-CURRENT_SOURCES+=w_handle.c
-CURRENT_SOURCES+=\
-	$(call List,android/Sourcefile)\
-	$(call List,xtra/Sourcefile)\
+ifndef ANDROID
+LOCAL_PATH:=.
+SRC_MAIN:=$(LOCAL_PATH)
+SRC_HWR:=hardware
+SRC_SDL:=sdl
+SRC_APK:=android
+SRC_XTRA:=xtra
+endif
 
-opts+=-DTOUCHINPUTS -DNATIVESCREENRES # -DHAVE_WHANDLE
-opts+=-DHWRENDER -DHAVE_GLES -DHAVE_GLES2
+CURRENT_SOURCES+=$(SRC_MAIN)/w_handle.c
+CURRENT_SOURCES+=\
+  $(call List,$(LOCAL_PATH)/$(SRC_APK)/Sourcefile)\
+  $(call List,$(LOCAL_PATH)/$(SRC_XTRA)/Sourcefile)\
 
 ifndef NOHW
-  $(info CHECKING FOR PROPER OPENGL...)
-  ifeq (, $(findstring -DHWRENDER, $(CURRENT_OPTS)))
-    ifeq (, $(findstring -DHAVE_GLES2, $(CURRENT_OPTS)))
-      $(info BRO PLEASE)
-      CURRENT_SOURCES+=hardware/r_gles/r_gles2.c sdl/ogl_es_sdl.c
-    else ifeq (, $(findstring -DHAVE_GLES, $(CURRENT_OPTS)))
-      $(info BRO PLEASE GLES1)
-      CURRENT_SOURCES+=hardware/r_gles/r_gles1.c sdl/ogl_es_sdl.c
-    else
-      $(info BRO PLEASE GLES2)
-      CURRENT_SOURCES+=hardware/r_opengl/r_opengl.c sdl/ogl_sdl.c
-    endif
+  ifdef HAVE_GLES2 #ifeq (, $(findstring -DHWRENDER, $(CURRENT_OPTS)))
+    CURRENT_OPTS+=-DHAVE_GLES2
+    CURRENT_SOURCES+=$(SRC_HWR)/r_gles/r_gles2.c $(SRC_SDL)/ogl_es_sdl.c
+  else ifdef HAVE_GLES #ifeq (, $(findstring -DHAVE_GLES,$(CURRENT_OPTS)))
+    CURRENT_OPTS+=-DHAVE_GLES
+    CURRENT_SOURCES+=$(SRC_HWR)/r_gles/r_gles1.c $(SRC_SDL)/ogl_es_sdl.c
+  else
+    CURRENT_SOURCES+=$(SRC_HWR)/r_opengl/r_opengl.c $(SRC_SDL)/ogl_sdl.c
   endif
 endif
 

@@ -5851,8 +5851,7 @@ static void CV_modelpack_OnChange(void)
 	ONLY_IF_GL_LOADED
 	if (!cv_usemodelpack.value || (cv_usemodelpack.value && HWR_ModelPackExists(cv_modelpack.string)))
 	{
-		HWR_FreeModelData();
-		HWR_InitModels();
+		HWR_FreeModelData(true);
 		HWR_ReadModels();
 	}
 }
@@ -6030,7 +6029,7 @@ void HWR_Shutdown(void)
 	HWR_FreeExtraSubsectors();
 	HWR_FreePolyPool();
 	HWR_FreeMapTextures();
-	HWR_FreeModelData();
+	HWR_FreeModelData(false);
 	HWD.pfnFlushScreenTextures();
 }
 

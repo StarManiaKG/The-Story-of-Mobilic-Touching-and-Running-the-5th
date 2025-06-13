@@ -636,7 +636,7 @@ static void FreeModelData(md2_t *md2)
 	}
 }
 
-void HWR_FreeModelData(void)
+void HWR_FreeModelData(boolean reload_models)
 {
 	size_t i;
 	INT32 s;
@@ -654,7 +654,8 @@ void HWR_FreeModelData(void)
 		modelpack = NULL;
 	}
 
-	HWR_InitModels();
+	if (reload_models)
+		HWR_InitModels();
 }
 
 // Define for getting accurate color brightness readings according to how the human eye sees them.
