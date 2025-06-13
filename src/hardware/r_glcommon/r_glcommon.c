@@ -733,7 +733,6 @@ void GLBackend_SetSurface(INT32 w, INT32 h)
 {
 	GLBackend_SetModelView(w, h);
 	GLBackend_SetStates();
-
 	pglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 

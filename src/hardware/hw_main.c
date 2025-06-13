@@ -5982,14 +5982,19 @@ void HWR_Startup(void)
 #endif
 
 		// STAR NOTE: helps you further test bitten
+#if 0
 		gl_shadersavailable = HWR_InitShaders();
-        //gl_shadersavailable = false;
+#else
+		gl_shadersavailable = false;
+#endif
 		HWR_SetShaderState();
 		HWR_LoadAllCustomShaders();
 		HWR_TogglePaletteRendering();
 	}
 
+#if 1
 	CONS_Printf("OPENGL init-ed!\n");
+#endif
 
 	gl_init = true;
 }

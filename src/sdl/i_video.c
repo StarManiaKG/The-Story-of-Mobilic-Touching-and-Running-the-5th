@@ -303,7 +303,8 @@ static SDL_bool Impl_RenderContextCreate(void)
 	if (!renderer)
 		renderer = SDL_CreateRenderer(window, -1, flags);
 
-#if 1
+#if 0
+	// STAR NOTE: ok
 	if (renderer == NULL)
 	{
 		VIDEO_INIT_ERROR("Couldn't create rendering context: %s");
@@ -365,18 +366,18 @@ static SDL_bool Impl_RenderContextDestroy(void)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		SDL_GL_MakeCurrent(window, sdlglcontext);
 		OglSdlSurface(realwidth, realheight);
+		SDL_GL_MakeCurrent(window, sdlglcontext);
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+
 		glanisotropicmode_cons_t[1].value = maximumAnisotropy;
-		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 
 		HWR_Startup();
 
-#if defined(__ANDROID__)
+//#if defined(__ANDROID__)
 		if (vid.glstate == VID_GL_LIBRARY_LOADED)
 			HWR_MakeScreenFinalTexture();
-#endif
+//#endif
 	}
 	else
 #endif

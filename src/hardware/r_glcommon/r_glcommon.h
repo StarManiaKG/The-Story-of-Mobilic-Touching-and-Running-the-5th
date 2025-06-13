@@ -461,7 +461,7 @@ extern PFNglFramebufferRenderbuffer pglFramebufferRenderbuffer;
 //                                                                  FUNCTIONS
 // ==========================================================================
 
-#if 1
+#if !defined(HAVE_GLES2) && !defined(HAVE_GLES)
 boolean SetupGLfunc(void);
 void SetupGLFunc4(void);
 #endif
