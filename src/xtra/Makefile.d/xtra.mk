@@ -26,15 +26,23 @@ SRC_XTRA:=xtra
 endif
 
 CURRENT_SOURCES+=$(SRC_MAIN)/w_handle.c
+ifndef ANDROID
+
 CURRENT_SOURCES+=\
   $(call List,$(LOCAL_PATH)/$(SRC_APK)/Sourcefile)\
   $(call List,$(LOCAL_PATH)/$(SRC_XTRA)/Sourcefile)\
 
+endif
+
 ifndef NOHW
-  ifdef HAVE_GLES2 #ifeq (, $(findstring -DHWRENDER, $(CURRENT_OPTS)))
+  #ifeq (, $(findstring -DHWRENDER, $(CURRENT_OPTS)))
+  #ifdef HAVE_GLES2
+  ifneq ($(findstring -DHAVE_GLES2, $(CURRENT_OPTS)),)
     CURRENT_OPTS+=-DHAVE_GLES2
     CURRENT_SOURCES+=$(SRC_HWR)/r_gles/r_gles2.c $(SRC_SDL)/ogl_es_sdl.c
-  else ifdef HAVE_GLES #ifeq (, $(findstring -DHAVE_GLES,$(CURRENT_OPTS)))
+  #else ifdef HAVE_GLES
+  #else ifeq (, $(findstring -DHAVE_GLES,$(CURRENT_OPTS)))
+  else ifneq ($(findstring -DHAVE_GLES, $(CURRENT_OPTS)),)
     CURRENT_OPTS+=-DHAVE_GLES
     CURRENT_SOURCES+=$(SRC_HWR)/r_gles/r_gles1.c $(SRC_SDL)/ogl_es_sdl.c
   else

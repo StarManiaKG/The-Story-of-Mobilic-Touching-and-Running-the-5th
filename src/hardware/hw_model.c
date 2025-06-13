@@ -779,9 +779,13 @@ static void Reload(void)
 }
 #endif
 
+#if 0
+#include "hw_drv.h"
+#endif
+
 void DeleteVBOs(model_t *model)
 {
-#if 0
+#if 1
 	(void)model;
 #else
 	// SRB2Android: our power

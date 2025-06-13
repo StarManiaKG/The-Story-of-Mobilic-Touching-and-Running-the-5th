@@ -307,7 +307,9 @@ boolean GLBackend_LoadFunctions(void)
 
 	GLBackend_LoadExtraFunctions();
 
+#if 0
 	GETOPENGLFUNC(ClearDepthf)
+#endif
 	GETOPENGLFUNC(DepthRangef)
     GETOPENGLFUNC(TexImage3D)
 
@@ -325,8 +327,9 @@ boolean GLBackend_LoadExtraFunctions(void)
 {
 	GLExtension_LoadFunctions();
 
+#if 0
 	GETOPENGLFUNC(VertexAttribPointer)
-
+#endif
 	GETOPENGLFUNCTRY(BlendEquation)
 	GETOPENGLFUNCTRY(GenerateMipmap)
 
