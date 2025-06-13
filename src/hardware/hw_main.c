@@ -5982,7 +5982,7 @@ void HWR_Startup(void)
 #endif
 
 		// STAR NOTE: helps you further test bitten
-#if 0
+#if 1
 		gl_shadersavailable = HWR_InitShaders();
 #else
 		gl_shadersavailable = false;
