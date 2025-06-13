@@ -715,7 +715,7 @@ extern GLuint startScreenWipe;
 extern GLuint endScreenWipe;
 extern GLuint finalScreenTexture;
 
-extern RGBA_t screenPalette[]; // the palette for the postprocessing step in palette rendering
+extern RGBA_t screenPalette[256]; // the palette for the postprocessing step in palette rendering
 extern GLuint screenPaletteTex; // 1D texture containing the screen palette
 extern GLuint paletteLookupTex; // 3D texture containing RGB -> palette index lookup table
 

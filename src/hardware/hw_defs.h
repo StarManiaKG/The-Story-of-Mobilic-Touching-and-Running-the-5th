@@ -164,7 +164,7 @@ enum
 // Must be at least NUMSHADERTARGETS*2 to fit base and custom shaders for each shader target.
 #define HWR_MAXSHADERS NUMSHADERTARGETS*2
 
-#if 1
+#if 0
 // STAR NOTE: maybe see about getting rid of this?
 
 // Shader sources (vertex and fragment)

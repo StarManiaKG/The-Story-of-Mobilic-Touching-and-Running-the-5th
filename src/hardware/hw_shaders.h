@@ -40,10 +40,12 @@
     "attribute vec3 a_normal;\n" \
     "attribute vec4 a_color;\n" \
     "attribute vec2 a_texCoord;\n" \
+		"attribute vec2 a_fademasktexcoord;\n" \
     "uniform mat4 u_projectionMatrix;\n" \
     "uniform mat4 u_modelViewMatrix;\n" \
     "varying vec4 v_color;\n" \
-    "varying vec2 v_texCoord;\n" \
+		"varying vec2 v_texcoord;\n" \
+		"varying vec2 v_fademasktexcoord;\n" \
     "void main() {\n" \
     "    #ifdef SRB2_MODEL_LIGHTING\n" \
     "    vec3 lightDirection = vec3(0.0, 1.0, 0.0);\n" \
@@ -56,7 +58,8 @@
     "    v_color = a_color;\n" \
     "    #endif\n" \
     "    gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;\n" \
-    "    v_texCoord = a_texCoord;\n" \
+    "    v_texcoord = a_texCoord;\n" \
+		"    v_fademasktexcoord = vec2(a_fademasktexcoord.x, a_fademasktexcoord.y);\n" \
     "}\0"
 
 
@@ -143,11 +146,11 @@
 
 #define GLSL_FLOOR_FRAGMENT_SHADER \
 	GLSL_FLOOR_FUDGES \
-	GLSL_SOFTWARE_FRAGMENT_SHADER
+	GLSL_DEFAULT_FRAGMENT_SHADER
 
 #define GLSL_WALL_FRAGMENT_SHADER \
 	GLSL_WALL_FUDGES \
-	GLSL_SOFTWARE_FRAGMENT_SHADER
+	GLSL_DEFAULT_FRAGMENT_SHADER
 
 // same as above but multiplies results with the lighting value from the
 // accompanying vertex shader (stored in gl_Color) if model lighting is enabled
@@ -354,12 +357,14 @@
 //
 
 #define GLSL_FALLBACK_VERTEX_SHADER \
+	"#version 100\n" \
 	"attribute vec3 a_position;\n" \
 	"attribute vec2 a_texcoord;\n" \
 	"attribute vec2 a_fademasktexcoord;\n" \
 	"attribute vec3 a_normal;\n" \
 	"attribute vec4 a_colors;\n" \
 	"varying vec2 v_texcoord;\n" \
+	"varying vec2 v_fademasktexcoord;\n" \
 	"varying vec3 v_normal;\n" \
 	"varying vec4 v_colors;\n" \
 	"uniform mat4 u_model;\n" \
@@ -369,6 +374,7 @@
 	"{\n" \
 		"gl_Position = u_projection * u_view * u_model * vec4(a_position, 1.0);\n" \
 		"v_texcoord = vec2(a_texcoord.x, a_texcoord.y);\n" \
+		"v_fademasktexcoord = vec2(a_fademasktexcoord.x, a_fademasktexcoord.y);\n" \
 		"v_normal = a_normal;\n" \
 		"v_colors = a_colors;\n" \
 	"}\0"
@@ -378,6 +384,7 @@
 //
 
 #define GLSL_FALLBACK_FRAGMENT_SHADER \
+	"#version 100\n" \
 	"precision mediump float;\n" \
 	"varying vec2 v_texcoord;\n" \
 	"varying vec3 v_normal;\n" \

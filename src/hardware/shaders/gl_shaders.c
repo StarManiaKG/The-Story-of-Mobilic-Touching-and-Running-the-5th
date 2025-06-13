@@ -78,7 +78,6 @@ static PFNglDisableVertexAttribArray pglDisableVertexAttribArray;
 
 gl_shader_t gl_shaders[HWR_MAXSHADERS];
 gl_shader_t gl_usershaders[HWR_MAXSHADERS];
-gl_shader_t gl_customshaders[HWR_MAXSHADERS]; // shader_source_t
 gl_shader_t gl_fallback_shader;
 
 // 09102020
@@ -106,23 +105,17 @@ static struct {
 	const char *vertex;
 	const char *fragment;
 } const gl_shadersources[] = {
-	// Default shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_FRAGMENT_SHADER},
-
 	// Floor shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_FRAGMENT_SHADER},
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_FLOOR_FRAGMENT_SHADER},
 
 	// Wall shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_FRAGMENT_SHADER},
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Sprite shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_FRAGMENT_SHADER},
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Model shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_FRAGMENT_SHADER},
-
-	// Model shader + diffuse lighting from above
-	{GLSL_MODEL_LIGHTING_VERTEX_SHADER, GLSL_MODEL_LIGHTING_FRAGMENT_SHADER},
 
 	// Water shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WATER_FRAGMENT_SHADER},
@@ -133,33 +126,41 @@ static struct {
 	// Sky shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SKY_FRAGMENT_SHADER},
 
+	// Palette postprocess shader
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_PALETTE_POSTPROCESS_FRAGMENT_SHADER},
+
+	// UI colormap fade shader
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_UI_COLORMAP_FADE_FRAGMENT_SHADER},
+
+	// UI tinted wipe shader
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_UI_TINTED_WIPE_FRAGMENT_SHADER},
 #ifdef HAVE_GLES2
-	// Default shader with alpha test
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
+        // Default shader with alpha test
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_DEFAULT_ALPHA_TEST},
 
-	// Floor shader with alpha test
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
+        // Floor shader with alpha test
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
 
-	// Wall shader with alpha test
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
+        // Wall shader with alpha test
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
 
-	// Sprite shader with alpha test
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
+        // Sprite shader with alpha test
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
 
-	// Model shader with alpha test
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
+        // Model shader with alpha test
+    {GLSL_MODEL_VERTEX_SHADER, GLSL_SOFTWARE_ALPHA_TEST},
 
-	// Model lighting shader with alpha test
-	{GLSL_MODEL_LIGHTING_VERTEX_SHADER, GLSL_MODEL_LIGHTING_ALPHA_TEST},
+        // Model lighting shader with alpha test
+    {GLSL_MODEL_LIGHTING_VERTEX_SHADER, GLSL_MODEL_LIGHTING_ALPHA_TEST},
 
-	// Water shader with alpha test
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WATER_ALPHA_TEST},
+        // Water shader with alpha test
+    {GLSL_DEFAULT_VERTEX_SHADER, GLSL_WATER_ALPHA_TEST},
 
-	// Fade mask shader
-	{GLSL_FADEMASK_VERTEX_SHADER, GLSL_FADEMASK_FRAGMENT_SHADER},
+        // Fade mask shader
+    {GLSL_FADEMASK_VERTEX_SHADER, GLSL_FADEMASK_FRAGMENT_SHADER},
 
-	// Additive and subtractive fade mask shader
-	{GLSL_FADEMASK_VERTEX_SHADER, GLSL_FADEMASK_ADDITIVEANDSUBTRACTIVE_FRAGMENT_SHADER},
+        // Additive and subtractive fade mask shader
+    {GLSL_FADEMASK_VERTEX_SHADER, GLSL_FADEMASK_ADDITIVEANDSUBTRACTIVE_FRAGMENT_SHADER},
 #endif
 
 	{NULL, NULL},
@@ -289,6 +290,7 @@ boolean Shader_Init(void)
 	if (!pglUseProgram)
 		return false;
 #endif
+	#if 0
 
 	gl_fallback_shader.vertex = Z_StrDup(GLSL_FALLBACK_VERTEX_SHADER);
 	gl_fallback_shader.fragment = Z_StrDup(GLSL_FALLBACK_FRAGMENT_SHADER);
@@ -298,6 +300,7 @@ boolean Shader_Init(void)
 		GL_MSG_Error("Failed to compile the fallback shader program!\n");
 		return false;
 	}
+	#endif
 
 	return true;
 #else
@@ -449,7 +452,7 @@ static void Shader_CompileError(const char *message, GLuint program, INT32 shade
 		pglGetShaderInfoLog(program, logLength, NULL, infoLog);
 	}
 
-	Shader_ErrorMessage("Shader_CompileProgram: %s (%s)\n%s\n", message, HWR_GetShaderName(shadernum), (infoLog ? infoLog : ""));
+	Shader_ErrorMessage("Shader_CompileProgram: %s (%s)\n%s\n", message, (shadernum!=-1)? HWR_GetShaderName(shadernum) : "FallbackShader", (infoLog ? infoLog : ""));
 
 	if (infoLog)
 		free(infoLog);
@@ -460,8 +463,13 @@ boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	GLuint gl_vertShader = 0;
 	GLuint gl_fragShader = 0;
 	GLint result;
-	const GLchar *vert_shader = shader->vertex;
-	const GLchar *frag_shader = shader->fragment;
+	const GLchar *vert_shader = gl_shadersources[i].vertex;
+	const GLchar *frag_shader = gl_shadersources[i].fragment;
+
+	// BITTEN DEBUG
+	// DUMBASS IF YOU LEAVE THIS IN THE FINAL BUILD... WHATS WRONG WITH YOU
+	extern customshaderxlat_t shaderxlat[];
+	CONS_Printf("SHADER \"%s\"\n", (i != -1) ? shaderxlat[i].type : "FallbackShader");
 
 	if (shader->program)
 		pglDeleteProgram(shader->program);
@@ -622,20 +630,15 @@ boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 boolean Shader_Compile(void)
 {
-#if 0
+#if 1
 	GLint i;
 
 	if (!GLExtension_shaders)
 		return false;
 
-	gl_customshaders[SHADER_DEFAULT].vertex = NULL;
-	gl_customshaders[SHADER_DEFAULT].fragment = NULL;
-
 	for (i = 0; gl_shadersources[i].vertex && gl_shadersources[i].fragment; i++)
 	{
 		gl_shader_t *shader, *usershader;
-		const GLchar *vert_shader = gl_shadersources[i].vertex;
-		const GLchar *frag_shader = gl_shadersources[i].fragment;
 
 		if (i >= HWR_MAXSHADERS)
 			break;
@@ -644,36 +647,21 @@ boolean Shader_Compile(void)
 		usershader = &gl_usershaders[i];
 
 		if (shader->program)
-			gl_DeleteProgram(shader->program);
+			pglDeleteProgram(shader->program);
 		if (usershader->program)
-			gl_DeleteProgram(usershader->program);
+			pglDeleteProgram(usershader->program);
+
 
 		shader->program = 0;
 		usershader->program = 0;
 
-		if (!Shader_CompileProgram(shader, i, vert_shader, frag_shader))
+		if (!Shader_CompileProgram(shader, i))
 		{
 			shader->program = 0;
 #ifdef HAVE_GLES2
-			if (i == SHADER_DEFAULT)
+			if (i == SHADER_FLOOR)
 				return false;
 #endif
-		}
-
-		// Compile custom shader
-		if ((i == SHADER_DEFAULT) || !(gl_customshaders[i].vertex || gl_customshaders[i].fragment))
-			continue;
-
-		// 18032019
-		if (gl_customshaders[i].vertex)
-			vert_shader = gl_customshaders[i].vertex;
-		if (gl_customshaders[i].fragment)
-			frag_shader = gl_customshaders[i].fragment;
-
-		if (!Shader_CompileProgram(usershader, i, vert_shader, frag_shader))
-		{
-			GL_MSG_Warning("Shader_Compile: Could not compile custom shader program for %s\n", HWR_GetShaderName(i));
-			usershader->program = 0;
 		}
 	}
 #else
@@ -688,7 +676,7 @@ boolean Shader_Compile(void)
 #endif
 
 #ifdef HAVE_GLES2
-	Shader_Set(SHADER_FLOOR);
+	Shader_Set(SHADER_ALPHA_TEST);
 	pglUseProgram(gl_shaderstate.program);
 	gl_shaderstate.changed = false;
 #endif

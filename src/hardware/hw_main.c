@@ -5558,7 +5558,7 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 
 	FRGBAFloat ClearColor;
 
-	ClearColor.red = 0.0f;
+	ClearColor.red = 0.0f; // bitten fucking debugggs shiiiiiiitttttttt
 	ClearColor.green = 0.0f;
 	ClearColor.blue = 0.0f;
 	ClearColor.alpha = 1.0f;
@@ -5595,7 +5595,6 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 
 	//------------------------------------------------------------------------
 	HWR_ClearView(); // Clears the depth buffer and resets the view I believe
-    drawsky = false; // bitten temp
 	if (!skybox && drawsky) // Don't draw the regular sky if there's a skybox
 		HWR_DrawSkyBackground(player);
 

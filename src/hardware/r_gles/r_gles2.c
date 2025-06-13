@@ -70,7 +70,7 @@ boolean GLBackend_LoadFunctions(void)
 	Shader_LoadFunctions();
 	Shader_CleanPrograms();
 
-#if 1
+#if 0
 	return Shader_Compile();
 #else
 	return true;
@@ -618,9 +618,8 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 
 	if (update)
 		pglTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
-    // bitten temp
-	//else
-		//pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
+	else
+		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 
 	if (MipmapEnabled)
 		pglGenerateMipmap(GL_TEXTURE_2D);
@@ -1596,6 +1595,8 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD pol
 {
 	float xfix, yfix;
 	INT32 texsize = 512;
+	extern Uint16 realwidth, realheight;
+	
 
 	const float screenVerts[12] =
 	{
@@ -1626,9 +1627,10 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD pol
 	fix[6] = xfix;
 	fix[7] = 0.0f;
 
+	pglViewport(0, 0, realwidth, realheight);
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-	pglBindTexture(GL_TEXTURE_2D, screentexture);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 	PreparePolygon(surf, NULL, surf ? polyflags : (PF_NoDepthTest));
 	if (!surf)
 	{
@@ -1644,7 +1646,7 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD pol
 #endif
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-	tex_downloaded = screentexture;
+	tex_downloaded = screenTextures[tex];
 }
 
 // Do screen fades!
@@ -1751,9 +1753,13 @@ EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, int width, int height)
 	clearColour.red = clearColour.green = clearColour.blue = 0;
 	clearColour.alpha = 1;
 	ClearBuffer(true, false, &clearColour);
+#if 0
 	SetBlend(PF_NoDepthTest);
 
 	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
+#else
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
+#endif
 
 	Shader_SetUniforms(NULL, &white, NULL, NULL);
 
@@ -1776,6 +1782,7 @@ EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
 	if (!paletteLookupTex)
 		pglGenTextures(1, &paletteLookupTex);
 	pglActiveTexture(GL_TEXTURE1);
+#if 0 // bitten temp
 	pglBindTexture(GL_TEXTURE_3D, paletteLookupTex);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1785,6 +1792,7 @@ EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
 #else
 		0, 0, GL_UNSIGNED_BYTE, lut);
 #endif
+	#endif
 	pglActiveTexture(GL_TEXTURE0);
 }
 
@@ -1852,7 +1860,7 @@ EXPORT void HWRAPI(ClearLightTables) (void)
 
 EXPORT void HWRAPI(SetScreenPalette) (RGBA_t *palette)
 {
-#if 1
+#if 0
 	(void)palette;
 	return;
 #else
