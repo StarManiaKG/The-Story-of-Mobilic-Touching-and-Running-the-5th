@@ -28,6 +28,7 @@
 #endif
 
 #ifndef HAVE_GLES2
+#error HAVE_GLES2 not set for some weird reason
 #include "SDL_opengl.h" //Alam_GBC: Simple, yes?
 #endif
 
