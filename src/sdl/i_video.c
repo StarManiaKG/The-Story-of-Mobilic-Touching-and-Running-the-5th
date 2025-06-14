@@ -303,7 +303,7 @@ static SDL_bool Impl_RenderContextCreate(void)
 	if (!renderer)
 		renderer = SDL_CreateRenderer(window, -1, flags);
 
-#if 0
+#if 1
 	// STAR NOTE: ok
 	if (renderer == NULL)
 	{
