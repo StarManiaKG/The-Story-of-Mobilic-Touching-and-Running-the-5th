@@ -8,7 +8,9 @@ CURRENT_SOURCES:=
 
 ifndef ANDROID
   opts+=-DTOUCHINPUTS -DNATIVESCREENRES # -DHAVE_WHANDLE
-  #opts+=-DHWRENDER -DHAVE_GLES -DHAVE_GLES2
+  ifneq ($(findstring -DHWRENDER, $(CURRENT_OPTS)),)
+    opts+=-DHAVE_GLES -DHAVE_GLES2
+  endif
   CURRENT_OPTS+=$(opts)
   #CURRENT_SOURCES:=$(sources)
 else

@@ -133,8 +133,6 @@
 	"final_color.a = texel.a * poly_color.a;\n" \
 	"gl_FragColor = final_color;\n" \
 
-#include "shaders/shaders_gles2.h"
-
 // hand tuned adjustments for light level calculation
 #define GLSL_FLOOR_FUDGES \
 	"#define STARTMAP_FUDGE 1.06\n" \
@@ -392,7 +390,7 @@
 	"uniform sampler2D t_texsampler;\n" \
 	"uniform vec4 poly_color;\n" \
 	"void main(void) {\n" \
-		"gl_FragColor = texture2D(t_texsampler, v_texcoord) * poly_color * v_colors;\n" \
+		"gl_FragColor = texture2D(t_texsampler, v_texcoord) * poly_color;\n" \
 	"}\0"
 
 //

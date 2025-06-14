@@ -32,6 +32,8 @@ void SCR_SetMaxNativeResDivider(float max);
 
 void SCR_ResetNativeResDivider(void);
 
+void APK_R_GetNativeResFov(fixed_t *fov);
+
 #endif
 
 #endif // __APK_NATIVESCREENRES__

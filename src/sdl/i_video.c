@@ -374,10 +374,10 @@ static SDL_bool Impl_RenderContextDestroy(void)
 
 		HWR_Startup();
 
-//#if defined(__ANDROID__)
+#if defined(__ANDROID__)
 		if (vid.glstate == VID_GL_LIBRARY_LOADED)
 			HWR_MakeScreenFinalTexture();
-//#endif
+#endif
 	}
 	else
 #endif

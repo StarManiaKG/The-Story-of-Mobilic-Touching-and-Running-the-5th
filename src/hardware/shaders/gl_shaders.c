@@ -94,6 +94,7 @@ static float shader_leveltime = 0;
 #ifdef HAVE_GLES2
 #include "shaders_gles2.h"
 #else
+#error SHOULD BE GLES2
 #include "shaders_gl2.h"
 #endif
 
