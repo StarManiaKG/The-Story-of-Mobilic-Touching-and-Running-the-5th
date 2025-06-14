@@ -374,10 +374,10 @@ static SDL_bool Impl_RenderContextDestroy(void)
 
 		HWR_Startup();
 
-//#if defined(__ANDROID__)
+#if defined(__ANDROID__)
 		if (vid.glstate == VID_GL_LIBRARY_LOADED)
 			HWR_MakeScreenFinalTexture();
-//#endif
+#endif
 	}
 	else
 #endif
@@ -2596,7 +2596,7 @@ void I_StartupGraphics(void)
 	if (M_CheckParm("-nomousegrab"))
 		mousegrabok = SDL_FALSE;
 
-#if 1
+#if 0
 	// STAR NOTE: hi
 	realwidth = vid.width;
 	realheight = vid.height;
