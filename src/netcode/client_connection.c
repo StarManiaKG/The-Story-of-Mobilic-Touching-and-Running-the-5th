@@ -1267,7 +1267,14 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			}
 		}
 
-		if (gamekeydown[KEY_ESCAPE] || gamekeydown[KEY_JOY1+1] || cl_mode == CL_ABORTED)
+		boolean abortConnection = gamekeydown[KEY_ESCAPE] || gamekeydown[KEY_JOY1+1] || cl_mode == CL_ABORTED;
+
+		#ifdef TOUCHINPUTS
+		if (!abortConnection)
+			abortConnection = touchnavigation[TOUCHNAV_BACK].defined && touchnavigation[TOUCHNAV_BACK].down;
+		#endif
+
+		if (abortConnection)
 		{
 			CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 			M_StartMessage(M_GetText("Network game synchronization aborted.\n\nPress ESC\n"), NULL, MM_NOTHING);
@@ -1386,7 +1393,7 @@ void CL_ConnectToServer(void)
 	do
 	{
 		// If the connection was aborted for some reason, leave
-		if (!CL_ServerConnectionTicker(tmpsave, &oldtic, &asksent))
+			if (!CL_ServerConnectionTicker(tmpsave, &oldtic, &asksent))
 			return;
 
 		if (server)
