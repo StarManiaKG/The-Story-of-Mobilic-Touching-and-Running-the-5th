@@ -20,13 +20,8 @@
 #include "../u_list.h"
 #include <string.h>
 
-// Android
-#include "../apk_main.h"
-
-#define USE_HWDRV
-#ifdef USE_HWDRV
-#include "hw_drv.h" // Needed for HWD
-#endif
+// SRB2Android
+#include "../android/apk_main.h"
 
 static float PI = (3.1415926535897932384626433832795f);
 static float U_Deg2Rad(float deg)
@@ -132,11 +127,6 @@ void UnloadModel(model_t *model)
 
 	if (model->materials)
 		Z_Free(model->materials);
-
-#ifdef USE_HWDRV
-	// STAR NOTE: hi modeling stuff
-	HWD.pfnDeleteModelVBOs(model);
-#endif
 
 	DeleteVBOs(model);
 	Z_Free(model);
@@ -789,9 +779,18 @@ static void Reload(void)
 }
 #endif
 
+#if 0
+#include "hw_drv.h"
+#endif
+
 void DeleteVBOs(model_t *model)
 {
+#if 1
 	(void)model;
+#else
+	// SRB2Android: our power
+	HWD.pfnDeleteModelVBOs(model);
+#endif
 /*	for (int i = 0; i < model->numMeshes; i++)
 	{
 		mesh_t *mesh = &model->meshes[i];

@@ -2675,6 +2675,51 @@ static void HWR_Subsector(size_t num)
 // BP: big hack for a test in lighning ref : 1249753487AB
 fixed_t *hwbbox;
 
+#if 0
+static void HWR_RenderBSPNode(INT32 bspnum)
+{
+	node_t *bsp = &nodes[bspnum];
+
+	// Decide which side the view point is on
+	INT32 side;
+
+	ps_numbspcalls.value.i++;
+
+	// Found a subsector?
+	if (bspnum & NF_SUBSECTOR)
+	{
+		if (bspnum == -1)
+		{
+			//*(gl_drawsubsector_p++) = 0;
+			HWR_Subsector(0);
+		}
+		else
+		{
+			//*(gl_drawsubsector_p++) = bspnum&(~NF_SUBSECTOR);
+			HWR_Subsector(bspnum&(~NF_SUBSECTOR));
+		}
+		return;
+	}
+
+	// Decide which side the view point is on.
+	side = R_PointOnSide(viewx, viewy, bsp);
+
+	// BP: big hack for a test in lighning ref : 1249753487AB
+	hwbbox = bsp->bbox[side];
+
+	// Recursively divide front space.
+	HWR_RenderBSPNode(bsp->children[side]);
+
+	// Possibly divide back space.
+	if (HWR_CheckBBox(bsp->bbox[side^1]))
+	{
+		// BP: big hack for a test in lighning ref : 1249753487AB
+		hwbbox = bsp->bbox[side^1];
+		HWR_RenderBSPNode(bsp->children[side^1]);
+	}
+}
+#else
+// BITTEN FIX(?)
 static void HWR_RenderBSPNode(INT32 bspnum)
 {
     node_t *bsp;
@@ -2703,6 +2748,7 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 
     HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
+#endif
 
 // ==========================================================================
 // gl_things.c
@@ -5512,7 +5558,7 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 
 	FRGBAFloat ClearColor;
 
-	ClearColor.red = 0.0f;
+	ClearColor.red = 0.0f; // bitten fucking debugggs shiiiiiiitttttttt
 	ClearColor.green = 0.0f;
 	ClearColor.blue = 0.0f;
 	ClearColor.alpha = 1.0f;
@@ -5549,7 +5595,6 @@ void HWR_RenderPlayerView(INT32 viewnumber, player_t *player)
 
 	//------------------------------------------------------------------------
 	HWR_ClearView(); // Clears the depth buffer and resets the view I believe
-    drawsky = false; // bitten temp
 	if (!skybox && drawsky) // Don't draw the regular sky if there's a skybox
 		HWR_DrawSkyBackground(player);
 
@@ -5787,23 +5832,6 @@ consvar_t cv_glsolvetjoin = CVAR_INIT ("gr_solvetjoin", "On", 0, CV_OnOff, NULL)
 
 consvar_t cv_glbatching = CVAR_INIT ("gr_batching", "On", 0, CV_OnOff, NULL);
 
-#ifdef HAVE_GL_FRAMEBUFFER
-consvar_t cv_glframebuffer = CVAR_INIT ("gr_framebuffer", "Off", CV_SAVE|CV_CALL, CV_OnOff, CV_glframebuffer_OnChange);
-consvar_t cv_glrenderbufferdepth = CVAR_INIT ("gr_renderbufferdepth", "Float", CV_SAVE|CV_CALL, glrenderbufferdepth_cons_t, CV_glrenderbufferdepth_OnChange);
-
-static void CV_glframebuffer_OnChange(void)
-{
-	if (rendermode == render_opengl)
-		HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
-}
-
-static void CV_glrenderbufferdepth_OnChange(void)
-{
-	if (rendermode == render_opengl)
-		HWD.pfnSetSpecialState(HWD_SET_RENDERBUFFER_DEPTH, cv_glrenderbufferdepth.value);
-}
-#endif
-
 static CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 bits"}, {0, NULL}};
 
 consvar_t cv_glpaletterendering = CVAR_INIT ("gr_paletterendering", "On", CV_SAVE|CV_CALL, CV_OnOff, CV_glpaletterendering_OnChange);
@@ -5812,13 +5840,17 @@ consvar_t cv_glpalettedepth = CVAR_INIT ("gr_palettedepth", "16 bits", CV_SAVE|C
 #define ONLY_IF_GL_LOADED if (vid.glstate != VID_GL_LIBRARY_LOADED) return;
 consvar_t cv_glwireframe = CVAR_INIT ("gr_wireframe", "Off", 0, CV_OnOff, NULL);
 
+#ifdef HAVE_GL_FRAMEBUFFER
+consvar_t cv_glframebuffer = CVAR_INIT ("gr_framebuffer", "Off", CV_SAVE|CV_CALL, CV_OnOff, CV_glframebuffer_OnChange);
+consvar_t cv_glrenderbufferdepth = CVAR_INIT ("gr_renderbufferdepth", "Float", CV_SAVE|CV_CALL, glrenderbufferdepth_cons_t, CV_glrenderbufferdepth_OnChange);
+#endif
+
 static void CV_modelpack_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	if (!cv_usemodelpack.value || (cv_usemodelpack.value && HWR_ModelPackExists(cv_modelpack.string)))
 	{
-		HWR_FreeModelData();
-		HWR_InitModels();
+		HWR_FreeModelData(true);
 		HWR_ReadModels();
 	}
 }
@@ -5871,6 +5903,20 @@ static void CV_glshaders_OnChange(void)
 		HWR_TogglePaletteRendering();
 	}
 }
+
+#ifdef HAVE_GL_FRAMEBUFFER
+static void CV_glframebuffer_OnChange(void)
+{
+	if (rendermode == render_opengl)
+		HWD.pfnSetSpecialState(HWD_SET_FRAMEBUFFER, cv_glframebuffer.value);
+}
+
+static void CV_glrenderbufferdepth_OnChange(void)
+{
+	if (rendermode == render_opengl)
+		HWD.pfnSetSpecialState(HWD_SET_RENDERBUFFER_DEPTH, cv_glrenderbufferdepth.value);
+}
+#endif
 
 //added by Hurdler: console varibale that are saved
 void HWR_AddCommands(void)
@@ -5935,20 +5981,20 @@ void HWR_Startup(void)
 		HWR_InitLight();
 #endif
 
-#if 1
 		// STAR NOTE: helps you further test bitten
+#if 1
 		gl_shadersavailable = HWR_InitShaders();
-        //gl_shadersavailable = false;
-        CONS_Printf("e\n");
-		HWR_SetShaderState();
-        CONS_Printf("e\n");
-		HWR_LoadAllCustomShaders();
-        CONS_Printf("e\n");
-		HWR_TogglePaletteRendering();
+#else
+		gl_shadersavailable = false;
 #endif
-
-		CONS_Printf("init-ed!\n");
+		HWR_SetShaderState();
+		HWR_LoadAllCustomShaders();
+		HWR_TogglePaletteRendering();
 	}
+
+#if 1
+	CONS_Printf("OPENGL init-ed!\n");
+#endif
 
 	gl_init = true;
 }
@@ -5987,7 +6033,7 @@ void HWR_Shutdown(void)
 	HWR_FreeExtraSubsectors();
 	HWR_FreePolyPool();
 	HWR_FreeMapTextures();
-	HWR_FreeModelData();
+	HWR_FreeModelData(false);
 	HWD.pfnFlushScreenTextures();
 }
 

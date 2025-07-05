@@ -45,15 +45,18 @@
 
 #ifdef HWRENDER
 #include "../hardware/hw_drv.h"
-#include "ogl_sdl.h"
-#ifdef STATIC_OPENGL
-	#if defined(__ANDROID__)
+#if defined(HAVE_GLES) || defined(HAVE_GLES2)
+	#include "ogl_es_sdl.h"
+	#ifdef STATIC_OPENGL
 		#include "../hardware/r_gles/r_gles.h"
-	#else
+	#endif
+#else
+	#include "ogl_sdl.h"
+	#ifdef STATIC_OPENGL
 		#include "../hardware/r_opengl/r_opengl.h"
 	#endif
 #endif
-#endif
+#endif // HWRENDER
 
 #ifdef HW3SOUND
 #include "../hardware/hw3dsdrv.h"

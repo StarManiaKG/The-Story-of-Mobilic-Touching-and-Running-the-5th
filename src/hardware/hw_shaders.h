@@ -21,7 +21,7 @@
 //
 // Generic vertex shader
 //
-#if 0
+#if 0 // star test
 #define GLSL_DEFAULT_VERTEX_SHADER \
 	"void main()\n" \
 	"{\n" \
@@ -40,10 +40,12 @@
     "attribute vec3 a_normal;\n" \
     "attribute vec4 a_color;\n" \
     "attribute vec2 a_texCoord;\n" \
+		"attribute vec2 a_fademasktexcoord;\n" \
     "uniform mat4 u_projectionMatrix;\n" \
     "uniform mat4 u_modelViewMatrix;\n" \
     "varying vec4 v_color;\n" \
-    "varying vec2 v_texCoord;\n" \
+		"varying vec2 v_texcoord;\n" \
+		"varying vec2 v_fademasktexcoord;\n" \
     "void main() {\n" \
     "    #ifdef SRB2_MODEL_LIGHTING\n" \
     "    vec3 lightDirection = vec3(0.0, 1.0, 0.0);\n" \
@@ -56,7 +58,8 @@
     "    v_color = a_color;\n" \
     "    #endif\n" \
     "    gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;\n" \
-    "    v_texCoord = a_texCoord;\n" \
+    "    v_texcoord = a_texCoord;\n" \
+		"    v_fademasktexcoord = vec2(a_fademasktexcoord.x, a_fademasktexcoord.y);\n" \
     "}\0"
 
 
@@ -67,7 +70,7 @@
 //
 // Generic fragment shader
 //
-#if 0
+#if 0 // star test
 #define GLSL_DEFAULT_FRAGMENT_SHADER \
 	"uniform sampler2D tex;\n" \
 	"uniform vec4 poly_color;\n" \
@@ -130,41 +133,6 @@
 	"final_color.a = texel.a * poly_color.a;\n" \
 	"gl_FragColor = final_color;\n" \
 
-#if 0
-#define GLSL_SOFTWARE_FRAGMENT_SHADER \
-	"#ifdef SRB2_PALETTE_RENDERING\n" \
-	"uniform sampler2D tex;\n" \
-	"uniform sampler3D palette_lookup_tex;\n" \
-	"uniform sampler2D lighttable_tex;\n" \
-	"uniform vec4 poly_color;\n" \
-	"uniform float lighting;\n" \
-	GLSL_DOOM_COLORMAP \
-	"void main(void) {\n" \
-		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		GLSL_PALETTE_RENDERING \
-	"}\n" \
-	"#else\n" \
-	"uniform sampler2D tex;\n" \
-	"uniform vec4 poly_color;\n" \
-	"uniform vec4 tint_color;\n" \
-	"uniform vec4 fade_color;\n" \
-	"uniform float lighting;\n" \
-	"uniform float fade_start;\n" \
-	"uniform float fade_end;\n" \
-	GLSL_DOOM_COLORMAP \
-	GLSL_DOOM_LIGHT_EQUATION \
-	"void main(void) {\n" \
-		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		"vec4 base_color = texel * poly_color;\n" \
-		"vec4 final_color = base_color;\n" \
-		GLSL_SOFTWARE_TINT_EQUATION \
-		GLSL_SOFTWARE_FADE_EQUATION \
-		"final_color.a = texel.a * poly_color.a;\n" \
-		"gl_FragColor = final_color;\n" \
-	"}\n" \
-	"#endif\0"
-#endif
-
 // hand tuned adjustments for light level calculation
 #define GLSL_FLOOR_FUDGES \
 	"#define STARTMAP_FUDGE 1.06\n" \
@@ -176,11 +144,11 @@
 
 #define GLSL_FLOOR_FRAGMENT_SHADER \
 	GLSL_FLOOR_FUDGES \
-	GLSL_SOFTWARE_FRAGMENT_SHADER
+	GLSL_DEFAULT_FRAGMENT_SHADER
 
 #define GLSL_WALL_FRAGMENT_SHADER \
 	GLSL_WALL_FUDGES \
-	GLSL_SOFTWARE_FRAGMENT_SHADER
+	GLSL_DEFAULT_FRAGMENT_SHADER
 
 // same as above but multiplies results with the lighting value from the
 // accompanying vertex shader (stored in gl_Color) if model lighting is enabled
@@ -249,7 +217,7 @@
 	"float sdistort = sin(a) * amp;\n" \
 	"float cdistort = cos(a) * amp;\n" \
 	"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n"
-#if 0
+#if 0 // star test
 #define GLSL_WATER_FRAGMENT_SHADER \
 	GLSL_FLOOR_FUDGES \
 	"const float freq = 0.025;\n" \
@@ -328,29 +296,35 @@
 #endif
 // Shader for the palette rendering postprocess step
 #define GLSL_PALETTE_POSTPROCESS_FRAGMENT_SHADER \
-	"uniform sampler2D tex;\n" \
-	"uniform sampler3D palette_lookup_tex;\n" \
-	"uniform sampler1D palette_tex;\n" \
-	"void main(void) {\n" \
-		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		"float tex_pal_idx = texture3D(palette_lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0;\n" \
-		"float palette_coord = (tex_pal_idx + 0.5) / 256.0;\n" \
-		"vec4 final_color = texture1D(palette_tex, palette_coord);\n" \
-		"gl_FragColor = final_color;\n" \
-	"}\0"
+    "precision mediump float;\n" \
+    "uniform sampler2D tex;\n" \
+    "uniform sampler2D palette_lookup_tex;\n" /* instead of sampler3D */ \
+    "uniform sampler2D palette_tex;\n"        /* instead of sampler1D */ \
+    "varying vec2 v_texcoord;\n" \
+    "void main(void) {\n" \
+        "vec4 texel = texture2D(tex, v_texcoord);\n" \
+        "vec2 lookup_coord = (texel.rg * 63.0 + 0.5) / 64.0;\n" \
+        "float tex_pal_idx = texture2D(palette_lookup_tex, lookup_coord).r * 255.0;\n" \
+        "vec2 palette_uv = vec2((tex_pal_idx + 0.5) / 256.0, 0.5);\n" \
+        "vec4 final_color = texture2D(palette_tex, palette_uv);\n" \
+        "gl_FragColor = final_color;\n" \
+    "}\0"
 
 // Applies a palettized colormap fade to tex
 #define GLSL_UI_COLORMAP_FADE_FRAGMENT_SHADER \
-	"uniform sampler2D tex;\n" \
-	"uniform float lighting;\n" \
-	"uniform sampler3D palette_lookup_tex;\n" \
-	"uniform sampler2D lighttable_tex;\n" \
-	"void main(void) {\n" \
-		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		"float tex_pal_idx = texture3D(palette_lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0;\n" \
-		"vec2 lighttable_coord = vec2((tex_pal_idx + 0.5) / 256.0, (lighting + 0.5) / 32.0);\n" \
-		"gl_FragColor = texture2D(lighttable_tex, lighttable_coord);\n" \
-	"}\0"
+    "precision mediump float;\n" \
+    "uniform sampler2D tex;\n" \
+    "uniform float lighting;\n" \
+    "uniform sampler2D palette_lookup_tex;\n" /* faked 3D */ \
+    "uniform sampler2D lighttable_tex;\n" \
+    "varying vec2 v_texcoord;\n" \
+    "void main(void) {\n" \
+        "vec4 texel = texture2D(tex, v_texcoord);\n" \
+        "vec2 lookup_coord = (texel.rg * 63.0 + 0.5) / 64.0;\n" \
+        "float tex_pal_idx = texture2D(palette_lookup_tex, lookup_coord).r * 255.0;\n" \
+        "vec2 lighttable_coord = vec2((tex_pal_idx + 0.5) / 256.0, (lighting + 0.5) / 32.0);\n" \
+        "gl_FragColor = texture2D(lighttable_tex, lighttable_coord);\n" \
+    "}\0"
 
 // For wipes that use additive and subtractive blending.
 // alpha_factor = 31 * 8 / 10 = 24.8
@@ -359,58 +333,70 @@
 // However this value created some ugliness in fades to white (special stage entry)
 // while palette rendering is enabled, so I raised the value just a bit.
 #define GLSL_UI_TINTED_WIPE_FRAGMENT_SHADER \
-	"uniform sampler2D tex;\n" \
-	"uniform vec4 poly_color;\n" \
-	"const float alpha_factor = 24.875;\n" \
-	"void main(void) {\n" \
-		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		"vec4 final_color = poly_color;\n" \
-		"float alpha = texel.a;\n" \
-		"if (final_color.a >= 0.5)\n" \
-			"alpha = 1.0 - alpha;\n" \
-		"alpha *= alpha_factor;\n" \
-		"final_color *= alpha;\n" \
-		"final_color.a = 1.0;\n" \
-		"gl_FragColor = final_color;\n" \
-	"}\0"
+    "precision mediump float;\n" \
+    "uniform sampler2D tex;\n" \
+    "uniform vec4 poly_color;\n" \
+    "const float alpha_factor = 24.875;\n" \
+    "varying vec2 v_texcoord;\n" \
+    "void main(void) {\n" \
+        "vec4 texel = texture2D(tex, v_texcoord);\n" \
+        "vec4 final_color = poly_color;\n" \
+        "float alpha = texel.a;\n" \
+        "if (final_color.a >= 0.5)\n" \
+            "alpha = 1.0 - alpha;\n" \
+        "alpha *= alpha_factor;\n" \
+        "final_color *= alpha;\n" \
+        "final_color.a = 1.0;\n" \
+        "gl_FragColor = final_color;\n" \
+    "}\0"
 
 //
 // Generic vertex shader
 //
 
 #define GLSL_FALLBACK_VERTEX_SHADER \
-    "attribute vec4 a_position;\n" \
-    "attribute vec4 a_color;\n" \
-    "attribute vec2 a_texCoord;\n" \
-    "uniform mat4 u_projView;\n" \
-    "varying vec4 v_color;\n" \
-    "varying vec2 v_texCoord;\n" \
-    "void main()\n" \
-    "{\n" \
-        "gl_Position = u_projView * a_position;\n" \
-        "v_color = a_color;\n" \
-        "v_texCoord = a_texCoord;\n" \
-    "}\n"
+	"#version 100\n" \
+	"attribute vec3 a_position;\n" \
+	"attribute vec2 a_texcoord;\n" \
+	"attribute vec2 a_fademasktexcoord;\n" \
+	"attribute vec3 a_normal;\n" \
+	"attribute vec4 a_colors;\n" \
+	"varying vec2 v_texcoord;\n" \
+	"varying vec2 v_fademasktexcoord;\n" \
+	"varying vec3 v_normal;\n" \
+	"varying vec4 v_colors;\n" \
+	"uniform mat4 u_model;\n" \
+	"uniform mat4 u_view;\n" \
+	"uniform mat4 u_projection;\n" \
+	"void main()\n" \
+	"{\n" \
+		"gl_Position = u_projection * u_view * u_model * vec4(a_position, 1.0);\n" \
+		"v_texcoord = vec2(a_texcoord.x, a_texcoord.y);\n" \
+		"v_fademasktexcoord = vec2(a_fademasktexcoord.x, a_fademasktexcoord.y);\n" \
+		"v_normal = a_normal;\n" \
+		"v_colors = a_colors;\n" \
+	"}\0"
 
 //
 // Generic fragment shader
 //
 
 #define GLSL_FALLBACK_FRAGMENT_SHADER \
-    "precision mediump float;\n" \
-    "uniform sampler2D u_texture;\n" \
-    "uniform vec4 u_polyColor;\n" \
-    "varying vec4 v_color;\n" \
-    "varying vec2 v_texCoord;\n" \
-    "void main()\n" \
-    "{\n" \
-        "gl_FragColor = texture2D(u_texture, v_texCoord) * u_polyColor * v_color;\n" \
-    "}\n"
+	"#version 100\n" \
+	"precision mediump float;\n" \
+	"varying vec2 v_texcoord;\n" \
+	"varying vec3 v_normal;\n" \
+	"varying vec4 v_colors;\n" \
+	"uniform sampler2D t_texsampler;\n" \
+	"uniform vec4 poly_color;\n" \
+	"void main(void) {\n" \
+		"gl_FragColor = texture2D(t_texsampler, v_texcoord) * poly_color;\n" \
+	"}\0"
 
 //
 // Software fragment shader
 //
-#if 0
+#if 0 // star test
 #define GLSL_SOFTWARE_FADE_EQUATION \
 	"float darkness = R_DoomLightingEquation(lighting);\n" \
 	"if (fade_start != 0.0 || fade_end != 31.0) {\n" \
@@ -448,7 +434,7 @@
 // Sky fragment shader
 // Modulates poly_color with gl_Color
 //
-#if 0
+#if 0 // star test
 #define GLSL_SKY_FRAGMENT_SHADER \
 	"uniform sampler2D tex;\n" \
 	"uniform vec4 poly_color;\n" \

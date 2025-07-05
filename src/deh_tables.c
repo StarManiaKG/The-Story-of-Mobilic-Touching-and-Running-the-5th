@@ -4881,7 +4881,10 @@ const char *const HUDITEMS_LIST[] = {
 	"TIMELEFTNUM",
 	"TIMEUP",
 	"HUNTPICS",
-	"POWERUPS"
+	"POWERUPS",
+
+	// ANDROID //
+	"ANDROID_LIVES"
 };
 
 const char *const MENUTYPES_LIST[] = {

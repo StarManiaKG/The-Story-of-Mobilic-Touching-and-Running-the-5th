@@ -42,6 +42,9 @@
 #include "hardware/hw_main.h"
 #endif
 
+// Android
+#include "android/apk_nativescreenres.h"
+
 // Fineangles in the SCREENWIDTH wide window.
 #define FIELDOFVIEW 2048
 
@@ -957,20 +960,8 @@ fixed_t R_GetPlayerFov(player_t *player)
 {
 	fixed_t fov = cv_fov.value + player->fovadd;
 #ifdef NATIVESCREENRES
-#if 1
-	if (cv_nativeres.value && cv_nativeresfov.value)
-	{
-		fixed_t resmul = FloatToFixed(((float)vid.width / (float)vid.height));
-		fov = atan(tan(fov*M_PI/360)*(resmul*0.7))*360/M_PI;
-	}
-#else
-	if (cv_nativeres.value && cv_nativeresfov.value)
-	{
-		fixed_t resmul = FixedDiv(vid.width * FRACUNIT, vid.height * FRACUNIT);
-		if (resmul > FRACUNIT)
-			fovtan = FixedMul(fovtan, (7*resmul/10));
-	}
-#endif
+	// SRB2Android: ok my turn now
+	APK_R_GetNativeResFov(&fov);
 #endif
 	return max(MINFOV*FRACUNIT, min(fov, MAXFOV*FRACUNIT));
 }
@@ -981,13 +972,10 @@ static void R_SetFov(fixed_t playerfov)
 	fovtan = FixedMul(FINETANGENT(fov >> ANGLETOFINESHIFT), viewmorph.zoomneeded);
 	if (splitscreen == 1) // Splitscreen FOV should be adjusted to maintain expected vertical view
 		fovtan = 17*fovtan/10;
+
 #ifdef NATIVESCREENRES
-	if (cv_nativeres.value && cv_nativeresfov.value)
-	{
-		fixed_t resmul = FixedDiv(vid.width * FRACUNIT, vid.height * FRACUNIT);
-		if (resmul > FRACUNIT)
-			fovtan = FixedMul(fovtan, (7*resmul/10));
-	}
+	// SRB2Android: ok my turn now
+	APK_R_GetNativeResFov(&fov);
 #endif
 
 	// this is only used for planes rendering in software mode
