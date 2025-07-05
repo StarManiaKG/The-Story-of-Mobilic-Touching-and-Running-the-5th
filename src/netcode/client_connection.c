@@ -646,6 +646,10 @@ static void BeginDownload(boolean direct)
 
 static void M_ConfirmConnect(event_t *ev)
 {
+	boolean confirm = false;
+	boolean back = false;
+
+	// TODO: make cross compat for pc stuff luls
 	if (ev->type == ev_keydown)
 	{
 		if (ev->key == ' ' || ev->key == 'y' || ev->key == KEY_ENTER || ev->key == KEY_JOY1)
@@ -661,11 +665,67 @@ static void M_ConfirmConnect(event_t *ev)
 #ifdef TOUCHINPUTS
 		else // this should probally not be like this, but i dont feel like fixing it rn, though would require CL_ServerConnectionEventHandler -bitten 
 		{
+			if (G_EventIsTouch(ev->type))
+			{
+				touchfinger_t *finger = &touchfingers[ev->key];
+				INT32 selection = -1;
+		
+				if (ev->type == ev_touchdown)
+				{
+					finger->u.keyinput = TS_MapFingerEventToKey(ev, &selection);
+					finger->selection = selection;
+					if (selection >= 0)
+						touchnavigation[selection].down = true;
+				}
+				else if (ev->type == ev_touchup)
+				{
+					selection = finger->selection;
+		
+					if (selection >= 0)
+					{
+						touchnavbutton_t *btn = &touchnavigation[selection];
+		
+						if (TS_FingerTouchesNavigationButton(ev->x, ev->y, btn))
+						{
+							if (finger->u.keyinput == KEY_ENTER)
+							{
+								BeginDownload(UseDirectDownloader());
+								M_ClearMenus(true);
+							}
+							else if (finger->u.keyinput == KEY_ESCAPE)
+							{
+								cl_mode = CL_ABORTED;
+								M_ClearMenus(true);
+							}
+		
+							finger->selection = -1;
+						}
+		
+						btn->down = false;
+					}
+		
+					finger->u.keyinput = KEY_NULL;
+				}
+			}
+				/*INT32 selection = -1;
+				INT32 touchkey = TS_MapFingerEventToKey(ev, &selection);
+
+				if (touchkey == KEY_ENTER)
+				{
+					BeginDownload(UseDirectDownloader());
+					M_ClearMenus(true);
+				}
+				else
+				{
+					cl_mode = CL_ABORTED;
+					M_ClearMenus(true);
+				}*/
 
 			TS_DefineNavigationButtons();
 			TS_HideNavigationButtons();
 
 			touchnavigation[TOUCHNAV_BACK].defined = true;
+
 		}
 #endif
 	}
