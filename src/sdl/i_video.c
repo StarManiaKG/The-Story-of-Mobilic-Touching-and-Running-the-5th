@@ -366,8 +366,8 @@ static SDL_bool Impl_RenderContextDestroy(void)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		OglSdlSurface(realwidth, realheight);
 		SDL_GL_MakeCurrent(window, sdlglcontext);
+		OglSdlSurface(realwidth, realheight);
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 
 		glanisotropicmode_cons_t[1].value = maximumAnisotropy;
