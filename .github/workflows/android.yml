@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [ starmaniakg-2214-master ]
+    branches: [ android-port, bitten-master ]
   pull_request:
     branches: [ android-port, bitten-master ]
 
