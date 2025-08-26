@@ -339,8 +339,8 @@ boolean GLBackend_LoadExtraFunctions(void)
 	GETOPENGLFUNCTRY(BlendEquation)
 	GETOPENGLFUNCTRY(GenerateMipmap)
 
-	if (pglGenerateMipmap)
-		MipmapSupported = GL_TRUE;
+	if (!pglGenerateMipmap || !pgluBuild2DMipmaps)
+		supportMipMap = GL_FALSE;
 
 	return true;
 }
@@ -426,24 +426,7 @@ EXPORT boolean HWRAPI(CompileShader) (int slot)
 
 EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 {
-#if 0
-#ifdef GL_SHADERS
-	switch (info)
-	{
-		case HWD_SHADERINFO_LEVELTIME:
-			shader_leveltime = (((float)(value-1)) + FIXED_TO_FLOAT(rendertimefrac)) / TICRATE;
-			break;
-		default:
-			break;
-	}
-#else
-	(void)info;
-	(void)value;
-#endif
-#else
-	// STAR NOTE: whoop-de-dooo
-	Shader_SetInfo(info, value);
-#endif
+	GLShader_SetInfo(info, value);
 }
 
 EXPORT void HWRAPI(SetShader) (int slot)
@@ -488,12 +471,10 @@ EXPORT void HWRAPI(UnSetShader) (void)
 		gl_shaderstate.current = NULL;
 		gl_shaderstate.type = 0;
 		gl_shaderstate.program = 0;
-
 		if (pglUseProgram)
 			pglUseProgram(0);
 	}
 #endif
-
 	gl_shadersenabled = false;
 }
 
@@ -591,10 +572,34 @@ void GLBackend_SetModelView(GLint w, GLint h)
 
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
 	if (screen_width != w || screen_height != h)
-		FlushScreenTextures();
+		GLTexture_FlushScreen();
+		//FlushScreenTextures();
 
 	screen_width = w;
 	screen_height = h;
+
+#if 1
+	// STAR NOTE: srb2 classic
+	GLint maxtexsize = 0;
+
+	texsize = 512;
+	while (texsize < w || texsize < h)
+	{
+		texsize *= 2; // Use a power of two texture, dammit
+	}
+
+	pglGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxtexsize); // Get the maximum supported texture size
+
+	if (texsize > maxtexsize && maxtexsize > 0)
+	{
+		// The desired screen texture resolution is too big for the player's GPU!
+		CONS_Alert(CONS_WARNING, "Tried to make a screen texture for a %dx%d game resolution, but your GPU only supports up to %dx%d! Please switch to the software renderer or lower your game resolution.\n", w, h, maxtexsize, maxtexsize);
+
+		// For now, let's just pray that clamping it to the maximum supported size "works"
+		// There'll be a stretchy "border" artefact, but it's better than failing to make the screen textures
+		texsize = maxtexsize;
+	}
+#endif
 
 	pglViewport(0, 0, w, h);
 
@@ -1589,12 +1594,7 @@ EXPORT void HWRAPI(SetSpecialState) (hwdspecialstate_t IdState, INT32 Value)
 					mag_filter = GL_LINEAR;
 					min_filter = GL_NEAREST;
 			}
-#if 0
-			if (!pgluBuild2DMipmaps)
-#else
-			// STAR NOTE: bro
-			if (!MipmapSupported)
-#endif
+			if (!supportMipMap)
 			{
 				MipMap = GL_FALSE;
 				min_filter = GL_LINEAR;
@@ -2258,10 +2258,7 @@ EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2])
 //			a new size
 EXPORT void HWRAPI(FlushScreenTextures) (void)
 {
-	int i;
-	pglDeleteTextures(NUMSCREENTEXTURES, screenTextures);
-	for (i = 0; i < NUMSCREENTEXTURES; i++)
-		screenTextures[i] = 0;
+	GLTexture_FlushScreen();
 }
 
 EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
@@ -2542,8 +2539,10 @@ EXPORT void HWRAPI(SetPaletteLookup)(UINT8 *lut)
 	pglBindTexture(GL_TEXTURE_3D, paletteLookupTex);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE,
-		0, GL_RED, GL_UNSIGNED_BYTE, lut);
+	pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat,
+		HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE,
+		0, GL_RED, GL_UNSIGNED_BYTE, lut
+	);
 	pglActiveTexture(GL_TEXTURE0);
 }
 

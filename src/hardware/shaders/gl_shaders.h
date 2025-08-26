@@ -154,7 +154,7 @@ void Shader_CleanPrograms(void);
 void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade);
 void Shader_SetSampler(gluniform_t uniform, GLint value);
 #define Shader_SetIntegerUniform Shader_SetSampler
-void Shader_SetInfo(hwdshaderinfo_t info, INT32 value);
+void GLShader_SetInfo(hwdshaderinfo_t info, INT32 value);
 
 #ifdef HAVE_GLES2
 int Shader_AttribLoc(int loc);

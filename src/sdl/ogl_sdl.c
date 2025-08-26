@@ -113,7 +113,7 @@ boolean GLBackend_Init(void)
 	GLULibname = NULL;
 #endif
 
-#if !defined(HAVE_GLES2) && !defined(HAVE_GLES)
+#if !defined (HAVE_GLES) && !defined (HAVE_GLES2)
 	SetupGLfunc();
 #endif
 
@@ -138,15 +138,25 @@ boolean GLBackend_Init(void)
 		CONS_Alert(CONS_ERROR, "If you know what is the GLU library's name, use -GLUlib\n");
 	}
 #endif
-#if 1
+
+#if 0
 	if (!GLBackend_InitContext())
-		return false;
+	{
+		;
+		//return false;
+	}
 #endif
-#if 1
+
+#if 0
 	if (!GLBackend_LoadExtraFunctions())
-		return false;
+	{
+		;
+		//return false;
+	}
 #endif
-	return GLBackend_LoadFunctions();
+
+	//return GLBackend_LoadFunctions();
+	return true;
 }
 
 /**	\brief	The OglSdlSurface function
@@ -158,22 +168,29 @@ boolean GLBackend_Init(void)
 */
 boolean OglSdlSurface(INT32 w, INT32 h)
 {
-	INT32 cbpp = cv_scr_depth.value < 16 ? 16 : cv_scr_depth.value;
-#if 1
-	// STAR NOTE: hi
-	static int majorGL = 0, minorGL = 0;
-#endif
+	INT32 cbpp = ((cv_scr_depth.value < 16) ? 16 : cv_scr_depth.value);
 
-#if 0
+	textureformatGL = ((cbpp > 16) ? GL_RGBA : GL_RGB5_A1);
+
+	oglflags = 0;
+
+#if 1
+#if 1
 	if (!GLBackend_InitContext())
-		return false;
+	{
+		;
+		//return false;
+	}
 #endif
 
 #if 0
 	if (!GLBackend_LoadExtraFunctions())
-		return false;
+	{
+		;
+		//return false;
+	}
 #endif
-
+#else
 	if (GLExtension_Available("GL_EXT_texture_filter_anisotropic"))
 		pglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
 	else
@@ -181,23 +198,28 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 	if (sscanf((const char*)gl_version, "%d.%d", &majorGL, &minorGL)
 		&& (!(majorGL == 1 && minorGL <= 3)))
-		MipmapSupported = true;
+		supportMipMap = GL_TRUE;
 	else
-		MipmapSupported = false;
-
-#if !defined(HAVE_GLES2) && !defined(HAVE_GLES)
-	SetupGLFunc4();
+		supportMipMap = GL_FALSE;
 #endif
+
+	SetupGLFunc4();
 
 	glanisotropicmode_cons_t[1].value = maximumAnisotropy;
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 
+#if 0
 	GLBackend_SetSurface(w, h);
-	GLBackend_SetStates();
+#else
+	SetModelView();
+	//GLBackend_SetStates();
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+#endif
 
 	HWR_Startup();
-	textureformatGL = cbpp > 16 ? GL_RGBA : GL_RGB5_A1;
+
+	//textureformatGL = (cbpp > 16 ? GL_RGBA : GL_RGB5_A1);
+	//oglflags = 0;
 
 	return true;
 }
@@ -220,17 +242,23 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	oldwaitvbl = waitvbl;
 
 	SDL_GetWindowSize(window, &sdlw, &sdlh);
-	HWR_MakeScreenFinalTexture();
+	//HWR_MakeScreenFinalTexture();
+
 #ifdef HAVE_GL_FRAMEBUFFER
 	GLFramebuffer_Disable();
 	RenderToFramebuffer = FramebufferEnabled;
 #endif
+
+	HWR_MakeScreenFinalTexture();
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
+	SDL_GL_SwapWindow(window);
+
 #ifdef HAVE_GL_FRAMEBUFFER
 	if (RenderToFramebuffer)
 		GLFramebuffer_Enable();
 #endif
-	SDL_GL_SwapWindow(window);
+
+	//SDL_GL_SwapWindow(window);
 
 	GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE);
 
@@ -238,7 +266,8 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	//			effects that want to take the old screen can do so after this
 	// Generic2 has the screen image without palette rendering brightness adjustments.
 	// Using that here will prevent brightness adjustments being applied twice.
-	DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
+	//DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
+	HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
 }
 
 EXPORT void HWRAPI(OglSdlSetPalette) (RGBA_t *palette)

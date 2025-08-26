@@ -58,11 +58,12 @@ boolean GLBackend_LoadFunctions(void)
 
 boolean GLBackend_LoadExtraFunctions(void)
 {
-	GETOPENGLFUNCTRY(GenerateMipmap)
-	if (pglGenerateMipmap)
-		MipmapSupported = GL_TRUE;
-
 	GLExtension_LoadFunctions();
+
+	GETOPENGLFUNCTRY(GenerateMipmap)
+
+	if (!pglGenerateMipmap)
+		supportMipMap = GL_FALSE;
 
 	return true;
 }
@@ -176,6 +177,7 @@ void GLBackend_SetStates(void)
 	GLfloat LightDiffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
 #endif
 
+#if 1
 	pglEnableClientState(GL_VERTEX_ARRAY); // We always use this one
 
 	pglShadeModel(GL_SMOOTH);      // iterate vertice colors
@@ -196,10 +198,10 @@ void GLBackend_SetStates(void)
 
 	// this set CurrentPolyFlags to the acctual configuration
 	CurrentPolyFlags = 0xffffffff;
-	GLBackend_SetBlend(0);
+	//GLBackend_SetBlend(0);
 
 	tex_downloaded = 0;
-	GLBackend_SetNoTexture();
+	//GLBackend_SetNoTexture();
 
 	pglPolygonOffset(-1.0f, -1.0f);
 
@@ -212,6 +214,60 @@ void GLBackend_SetStates(void)
 	// bp : when no t&l :)
 	pglLoadIdentity();
 	pglScalef(1.0f, 1.0f, -1.0f);
+
+#else
+
+	// STAR NOTE: older versoin
+
+	// Hurdler: not necessary, is it?
+	pglShadeModel(GL_SMOOTH);      // iterate vertice colors
+	//pglShadeModel(GL_FLAT);
+
+	pglEnable(GL_TEXTURE_2D);      // two-dimensional texturing
+
+	pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	pglEnable(GL_ALPHA_TEST);
+	pglAlphaFunc(GL_NOTEQUAL, 0.0f);
+
+	//pglBlendFunc(GL_ONE, GL_ZERO); // copy pixel to frame buffer (opaque)
+	pglEnable(GL_BLEND);           // enable color blending
+
+	pglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	//pglDisable(GL_DITHER);         // faB: ??? (undocumented in OpenGL 1.1)
+	                              // Hurdler: yes, it is!
+	pglEnable(GL_DEPTH_TEST);    // check the depth buffer
+	pglDepthMask(GL_TRUE);             // enable writing to depth buffer
+	pglClearDepth(1.0f);
+	pglDepthRange(0.0f, 1.0f);
+	pglDepthFunc(GL_LEQUAL);
+
+	// this set CurrentPolyFlags to the actual configuration
+	CurrentPolyFlags = 0xffffffff;
+	//GLBackend_SetBlend(0);
+
+	tex_downloaded = 0;
+	//GLBackend_SetNoTexture();
+
+	pglPolygonOffset(-1.0f, -1.0f);
+
+	//pglEnable(GL_CULL_FACE);
+	//pglCullFace(GL_FRONT);
+
+	pglDisable(GL_FOG);
+
+	// Lighting for models
+#ifdef GL_LIGHT_MODEL_AMBIENT
+	pglLightModelfv(GL_LIGHT_MODEL_AMBIENT, LightDiffuse);
+	pglEnable(GL_LIGHT0);
+#endif
+
+	// bp : when no t&l :)
+	pglLoadIdentity();
+	pglScalef(1.0f, 1.0f, -1.0f);
+	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
+#endif
 }
 
 // -----------------+
@@ -519,7 +575,7 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 	else
 		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 
-	if (MipmapEnabled)
+	if (enabledMipmap)
 		pglGenerateMipmap(GL_TEXTURE_2D);
 
 	if (pTexInfo->flags & TF_WRAPX)

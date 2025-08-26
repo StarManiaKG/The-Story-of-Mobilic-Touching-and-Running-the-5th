@@ -86,8 +86,8 @@ boolean GLBackend_LoadExtraFunctions(void)
 	GETOPENGLFUNCTRY(BlendEquation)
 	GETOPENGLFUNCTRY(GenerateMipmap)
 
-	if (pglGenerateMipmap)
-		MipmapSupported = GL_TRUE;
+	if (!pglGenerateMipmap)
+		supportMipMap = GL_FALSE;
 
 	return true;
 }
@@ -142,7 +142,7 @@ EXPORT boolean HWRAPI(CompileShader) (int slot)
 
 EXPORT void HWRAPI(SetShaderInfo) (hwdshaderinfo_t info, INT32 value)
 {
-	Shader_SetInfo(info, value);
+	GLShader_SetInfo(info, value);
 }
 
 EXPORT void HWRAPI(SetShader) (int type)
@@ -621,7 +621,7 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 	else
 		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 
-	if (MipmapEnabled)
+	if (enabledMipmap)
 		pglGenerateMipmap(GL_TEXTURE_2D);
 }
 
@@ -732,13 +732,83 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 	else
 		c_poly = &white;
 
+#if 0
+	// STAR NOTE: opengl port
+
+	// this test is added for new coronas' code (without depth buffer)
+	// I think I should do a separate function for drawing coronas, so it will be a little faster
+	if (PolyFlags & PF_Corona) // check to see if we need to draw the corona
+	{
+		FUINT i;
+		FUINT j;
+
+		//rem: all 8 (or 8.0f) values are hard coded: it can be changed to a higher value
+		GLfloat     buf[8][8];
+		GLfloat    cx, cy, cz;
+		GLfloat    px = 0.0f, py = 0.0f, pz = -1.0f;
+		GLfloat     scalef = 0.0f;
+
+		GLubyte c[4];
+
+		float alpha;
+
+		cx = (pOutVerts[0].x + pOutVerts[2].x) / 2.0f; // we should change the coronas' ...
+		cy = (pOutVerts[0].y + pOutVerts[2].y) / 2.0f; // ... code so its only done once.
+		cz = pOutVerts[0].z;
+
+		// I dont know if this is slow or not
+		GLProject(cx, cy, cz, &px, &py, &pz);
+		//GL_DBG_Printf("Projection: (%f, %f, %f)\n", px, py, pz);
+
+		if ((pz <  0.0l) ||
+			(px < -8.0l) ||
+			(py < viewport[1]-8.0l) ||
+			(px > viewport[2]+8.0l) ||
+			(py > viewport[1]+viewport[3]+8.0l))
+			return;
+
+		// the damned slow glReadPixels functions :(
+		pglReadPixels((INT32)px-4, (INT32)py, 8, 8, GL_DEPTH_COMPONENT, GL_FLOAT, buf);
+		//GL_DBG_Printf("DepthBuffer: %f %f\n", buf[0][0], buf[3][3]);
+
+		for (i = 0; i < 8; i++)
+			for (j = 0; j < 8; j++)
+				scalef += (pz > buf[i][j]+0.00005f) ? 0 : 1;
+
+		// quick test for screen border (not 100% correct, but looks ok)
+		if (px < 4) scalef -= (GLfloat)(8*(4-px));
+		if (py < viewport[1]+4) scalef -= (GLfloat)(8*(viewport[1]+4-py));
+		if (px > viewport[2]-4) scalef -= (GLfloat)(8*(4-(viewport[2]-px)));
+		if (py > viewport[1]+viewport[3]-4) scalef -= (GLfloat)(8*(4-(viewport[1]+viewport[3]-py)));
+
+		scalef /= 64;
+		//GL_DBG_Printf("Scale factor: %f\n", scalef);
+
+		if (scalef < 0.05f)
+			return;
+
+		// GLubyte c[4];
+		c[0] = pSurf->PolyColor.s.red;
+		c[1] = pSurf->PolyColor.s.green;
+		c[2] = pSurf->PolyColor.s.blue;
+
+		alpha = byte2float[pSurf->PolyColor.s.alpha];
+		alpha *= scalef; // change the alpha value (it seems better than changing the size of the corona)
+		c[3] = (unsigned char)(alpha * 255);
+		pglColor4ubv(c);
+	}
+#else
+	(void)pOutVerts;
+	(void)GLProject;
+#endif
+
 	Shader_SetUniforms(pSurf, c_poly, c_tint, c_fade);
 }
 
 // -----------------+
 // DrawPolygon      : Render a polygon, set the texture, set render mode
 // -----------------+
-static void DrawPolygon_GLES2(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, INT32 shader)
+EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
 {
 	if (gl_shaderstate.current == NULL)
 		return;
@@ -761,11 +831,6 @@ static void DrawPolygon_GLES2(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT 
 
 	if (PolyFlags & PF_ForceWrapY)
 		GLBackend_SetClamp2D(GL_TEXTURE_WRAP_T);
-}
-
-EXPORT void HWRAPI(DrawPolygon) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags)
-{
-	DrawPolygon_GLES2(pSurf, pOutVerts, iNumPts, PolyFlags, 0);
 }
 
 EXPORT void HWRAPI(DrawIndexedTriangles) (FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, UINT32 *IndexArray)
@@ -1001,13 +1066,33 @@ EXPORT void HWRAPI(DrawModel) (model_t *model, INT32 frameIndex, float duration,
 	fade.blue  = (Surface->FadeColor.s.blue/255.0f);
 	fade.alpha = (Surface->FadeColor.s.alpha/255.0f);
 
+#if 1
+	// STAR NOTE: opengl port
+	flags = (Surface->PolyFlags | PF_Modulated);
+	if (Surface->PolyFlags & (PF_Additive|PF_Subtractive|PF_ReverseSubtract|PF_Multiplicative))
+		flags |= PF_Occlude;
+	else if (Surface->PolyColor.s.alpha == 0xFF)
+		flags |= (PF_Occlude | PF_Masked);
+#endif
+
 	useNormals = model_lighting && (Shader_AttribLoc(LOC_NORMAL) != -1);
 	if (useNormals)
 		Shader_EnableVertexAttribArray(LOC_NORMAL);
 
+#if 1
+	// STAR NOTE: technically an opengl port
+	GLBackend_SetBlend(flags);
+	//SetBlend(flags);
+#else
+	(void)flags;
+#endif
 	Shader_SetUniforms(Surface, &poly, &tint, &fade);
 
 	pglEnable(GL_CULL_FACE);
+#if 0
+	// STAR NOTE: opengl port
+	pglEnable(GL_NORMALIZE);
+#endif
 
 	// flipped is if the object is vertically flipped
 	// hflipped is if the object is horizontally flipped
@@ -1023,6 +1108,11 @@ EXPORT void HWRAPI(DrawModel) (model_t *model, INT32 frameIndex, float duration,
 	}
 
 	lzml_matrix4_identity(modelMatrix);
+
+#if 0
+	// STAR NOTE: opengl port
+	pglPushMatrix(); // should be the same as glLoadIdentity
+#endif
 
 	translate[0] = pos->x;
 	translate[1] = pos->z;
@@ -1595,8 +1685,9 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD pol
 {
 	float xfix, yfix;
 	INT32 texsize = 512;
+#if 0
 	extern Uint16 realwidth, realheight;
-	
+#endif
 
 	const float screenVerts[12] =
 	{
@@ -1627,7 +1718,9 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD pol
 	fix[6] = xfix;
 	fix[7] = 0.0f;
 
+#if 0
 	pglViewport(0, 0, realwidth, realheight);
+#endif
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
@@ -1635,6 +1728,7 @@ EXPORT void HWRAPI(DrawScreenTexture)(int tex, FSurfaceInfo *surf, FBITFIELD pol
 	if (!surf)
 	{
 		Shader_SetUniforms(NULL, &white, NULL, NULL);
+		//pglColor4ubv(white);
 	}
 
 #if 0
@@ -1777,22 +1871,22 @@ EXPORT void HWRAPI(DrawScreenFinalTexture) (int tex, int width, int height)
 
 EXPORT void HWRAPI(SetPaletteLookup) (UINT8 *lut)
 {
-	GLenum internalFormat;
-	internalFormat = GL_LUMINANCE;
+	GLenum internalFormat = GL_LUMINANCE;
 	if (!paletteLookupTex)
 		pglGenTextures(1, &paletteLookupTex);
 	pglActiveTexture(GL_TEXTURE1);
-#if 0 // bitten temp
+#if 1 // bitten temp
+#ifndef GL_RED
+#define GL_RED 0x1903
+#endif
 	pglBindTexture(GL_TEXTURE_3D, paletteLookupTex);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE,
-#if 0
-		0, GL_RED, GL_UNSIGNED_BYTE, lut);
-#else
-		0, 0, GL_UNSIGNED_BYTE, lut);
+	pglTexImage3D(GL_TEXTURE_3D, 0, internalFormat,
+		HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE, HWR_PALETTE_LUT_SIZE,
+		0, GL_RED, GL_UNSIGNED_BYTE, lut
+	);
 #endif
-	#endif
 	pglActiveTexture(GL_TEXTURE0);
 }
 

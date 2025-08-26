@@ -65,6 +65,7 @@
 #define GETFUNC(func) \
 	else if (0 == strcmp(#func, funcName)) \
 		funcPointer = &func \
+
 //
 //
 /**	\brief	The *hwSym function

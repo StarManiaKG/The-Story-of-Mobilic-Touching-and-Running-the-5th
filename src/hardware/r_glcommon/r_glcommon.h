@@ -70,6 +70,8 @@ void GL_DBG_Printf(const char *format, ...);
 void GL_MSG_Warning(const char *format, ...);
 void GL_MSG_Error(const char *format, ...);
 
+void VID_DisplayGLError(void);
+
 extern char *lastglerror;
 
 #ifdef DEBUG_TO_FILE
@@ -461,7 +463,7 @@ extern PFNglFramebufferRenderbuffer pglFramebufferRenderbuffer;
 //                                                                  FUNCTIONS
 // ==========================================================================
 
-#if !defined(HAVE_GLES2) && !defined(HAVE_GLES)
+#if !defined(HAVE_GLES) && !defined(HAVE_GLES2)
 boolean SetupGLfunc(void);
 void SetupGLFunc4(void);
 #endif
@@ -683,17 +685,13 @@ extern RGBA_t myPaletteData[];
 extern GLint  screen_width;
 extern GLint  screen_height;
 extern GLbyte screen_depth;
-extern GLint  maximumAnisotropy;
-#if 0
-// STAR NOTE: not needed anymore, but eh, you never know
-extern boolean supportMipMap;
-#endif
 
-extern GLboolean MipmapEnabled;
-extern GLboolean MipmapSupported;
+extern GLboolean enabledMipmap;
+extern GLboolean supportMipMap;
 extern GLint min_filter;
 extern GLint mag_filter;
 extern GLint anisotropic_filter;
+extern GLint maximumAnisotropy;
 
 extern boolean alpha_test;
 extern float alpha_threshold;

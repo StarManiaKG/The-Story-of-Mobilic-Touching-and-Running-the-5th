@@ -22,20 +22,22 @@
 #define _MATH_DEFINES_DEFINED
 
 #include "SDL.h"
-
 #include "sdlmain.h"
 
 #include "../doomdef.h"
 
 #ifdef HWRENDER
-#include "../hardware/r_gles/r_gles.h"
 #include "ogl_es_sdl.h"
-#include "../i_system.h"
 #include "hwsym_sdl.h"
+
+#include "../i_system.h"
 #include "../m_argv.h"
+
+#include "../hardware/r_gles/r_gles.h"
 
 /**	\brief SDL video display surface
 */
+INT32 oglflags = 0;
 SDL_GLContext sdlglcontext = 0;
 
 void *GLBackend_GetFunction(const char *proc)
@@ -51,10 +53,18 @@ boolean GLBackend_Init(void)
 		return 0;
 	}
 
+#if 0
 	if (!GLBackend_InitContext())
 		return false;
+#endif
 
-	return GLBackend_LoadFunctions();
+#if 0
+	if (!GLBackend_LoadExtraFunctions())
+		return false;
+#endif
+
+	//return GLBackend_LoadFunctions();
+	return true;
 }
 
 /**	\brief	The OglSdlSurface function
@@ -67,7 +77,40 @@ boolean GLBackend_Init(void)
 */
 boolean OglSdlSurface(INT32 w, INT32 h)
 {
+	INT32 cbpp = ((cv_scr_depth.value < 16) ? 16 : cv_scr_depth.value);
+
+	textureformatGL = ((cbpp > 16) ? GL_RGBA : GL_RGB5_A1);
+	oglflags = 0;
+
+#if 1
+	if (!GLBackend_InitContext())
+		return false;
+#endif
+
+#if 0
+	if (!GLBackend_LoadExtraFunctions())
+		return false;
+#endif
+
+#if 0
+	if (sscanf((const char*)gl_version, "%d.%d", &majorGL, &minorGL)
+		&& (!(majorGL == 1 && minorGL <= 3)))
+		supportMipMap = GL_TRUE;
+	else
+		supportMipMap = GL_FALSE;
+#endif
+
+#if 0
 	GLBackend_SetSurface(w, h);
+#else
+	//SetModelView();
+	//GLBackend_SetModelView(w, h);
+	//GLBackend_SetStates();
+	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+#endif
+	HWR_Startup();
+	//textureformatGL = cbpp > 16 ? GL_RGBA : GL_RGB5_A1;
+	//oglflags = 0;
 	return true;
 }
 

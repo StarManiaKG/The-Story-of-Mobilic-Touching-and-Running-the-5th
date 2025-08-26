@@ -478,7 +478,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *grtex, GLMipmap_t 
 	texture = textures[texnum];
 
 	HWR_ResizeBlock(texture->width, texture->height);
-#if 0
+#if 1
 	// STAR NOTE: hi again...
 	mipmap->width = (UINT16)blockwidth;
 	mipmap->height = (UINT16)blockheight;
@@ -546,7 +546,7 @@ void HWR_MakePatch (const patch_t *patch, GLPatch_t *grPatch, GLMipmap_t *grMipm
 	if (grMipmap->width == 0)
 	{
 		HWR_ResizeBlock(patch->width, patch->height);
-#if 1
+#if 0
 		grMipmap->width = (UINT16)blockwidth;
 		grMipmap->height = (UINT16)blockheight;
 #else
@@ -1151,7 +1151,9 @@ static void HWR_CacheFadeMask(GLMipmap_t *grMipmap, lumpnum_t fademasklumpnum)
 	}
 
 	// Thankfully, this will still work for this scenario
+#if 0
 	HWR_ResizeBlock(fmwidth, fmheight);
+#endif
 	grMipmap->width  = blockwidth;
 	grMipmap->height = blockheight;
 

@@ -286,7 +286,7 @@ void HWR_ReloadModels(void)
 	size_t i;
 
 #if 0
-	HWR_LoadModels();
+	HWR_ReadModels();
 #endif
 
 	for (i = 0; i < md2_numplayermodels; i++)

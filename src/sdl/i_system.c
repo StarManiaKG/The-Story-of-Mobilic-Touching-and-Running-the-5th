@@ -3099,7 +3099,6 @@ const char *I_SharedStorageLocation(void)
 {
 #if defined(__ANDROID__)
 	static char *sharedStorage = NULL;
-
 	if (sharedStorage == NULL)
 	{
 		char *dir = JNI_GetStorageDirectory();
@@ -3111,7 +3110,6 @@ const char *I_SharedStorageLocation(void)
 			snprintf(sharedStorage, size, "%s" PATHSEP "%s", dir, gamePath);
 		}
 	}
-
 	return sharedStorage;
 #else
 	return NULL;

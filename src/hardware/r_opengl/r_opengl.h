@@ -28,7 +28,9 @@
 #endif
 
 #ifndef HAVE_GLES2
+#if defined (__ANDROID__)
 #error HAVE_GLES2 not set for some weird reason
+#endif
 #include "SDL_opengl.h" //Alam_GBC: Simple, yes?
 #endif
 

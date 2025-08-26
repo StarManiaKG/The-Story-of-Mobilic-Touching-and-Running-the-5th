@@ -94,7 +94,9 @@ static float shader_leveltime = 0;
 #ifdef HAVE_GLES2
 #include "shaders_gles2.h"
 #else
+#if defined (__ANDROID__)
 #error SHOULD BE GLES2
+#endif
 #include "shaders_gl2.h"
 #endif
 
@@ -341,8 +343,9 @@ void Shader_Load(int slot, char *code, hwdshaderstage_t stage)
 // Those are given to the uniforms.
 //
 
-void Shader_SetInfo(hwdshaderinfo_t info, INT32 value)
+void GLShader_SetInfo(hwdshaderinfo_t info, INT32 value)
 {
+#ifdef GL_SHADERS
 	switch (info)
 	{
 		case HWD_SHADERINFO_LEVELTIME:
@@ -351,6 +354,7 @@ void Shader_SetInfo(hwdshaderinfo_t info, INT32 value)
 		default:
 			break;
 	}
+#endif
 }
 
 void Shader_Set(int type)
@@ -368,6 +372,7 @@ void Shader_Set(int type)
 		return;
 #endif
 
+#if 1
 		gl_shader_t *next_shader = &gl_shaders[type]; // the gl_shader_t we are going to switch to
 
 		if (!next_shader->program)
@@ -383,14 +388,16 @@ void Shader_Set(int type)
 		}
 
 		gl_shadersenabled = true;
+#endif
 
-
+#if 0
 #ifdef HAVE_GLES2
 	(void)shader;
 	Shader_SetTransform();
 	gl_shadersenabled = true;
 #else
 	gl_shadersenabled = (shader->program != 0);
+#endif
 #endif
 	return;
 }
@@ -470,7 +477,6 @@ boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 #if 1
 	// BITTEN DEBUG
 	// DUMBASS IF YOU LEAVE THIS IN THE FINAL BUILD... WHATS WRONG WITH YOU
-	extern customshaderxlat_t shaderxlat[];
 	CONS_Printf("SHADER \"%s\"\n", (i != -1) ? shaderxlat[i].type : "FallbackShader");
 #endif
 

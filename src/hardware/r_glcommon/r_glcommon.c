@@ -11,18 +11,19 @@
 /// \file r_glcommon.c
 /// \brief Common OpenGL functions shared by OpenGL backends
 
+#include <stdarg.h>
+
 #include "r_glcommon.h"
 
 #include "../../doomdata.h"
 #include "../../doomtype.h"
 #include "../../doomdef.h"
 #include "../../console.h"
+#include "../../m_menu.h"
 
 #ifdef GL_SHADERS
 #include "../shaders/gl_shaders.h"
 #endif
-
-#include <stdarg.h>
 
 const GLubyte *gl_version = NULL;
 const GLubyte *gl_renderer = NULL;
@@ -39,14 +40,14 @@ RGBA_t *textureBuffer = NULL;
 size_t textureBufferSize = 0;
 
 RGBA_t  myPaletteData[256];
-GLint   screen_width    = 0;               // used by Draw2DLine()
+GLint   screen_width    = 0; // used by Draw2DLine()
 GLint   screen_height   = 0;
 GLbyte  screen_depth    = 0;
 GLint   textureformatGL = 0;
 GLint maximumAnisotropy = 0;
 
-GLboolean MipmapEnabled = GL_FALSE;
-GLboolean MipmapSupported = GL_FALSE;
+GLboolean enabledMipmap = GL_FALSE;
+GLboolean supportMipMap = GL_FALSE;
 GLint min_filter = GL_LINEAR;
 GLint mag_filter = GL_LINEAR;
 GLint anisotropic_filter = 0;
@@ -657,7 +658,6 @@ INT32 GLBackend_GetAlphaTestShader(INT32 type)
 		default: break;
 	}
 #endif
-
 	return type;
 }
 
@@ -675,7 +675,6 @@ INT32 GLBackend_InvertAlphaTestShader(INT32 type)
 		default: break;
 	}
 #endif
-
 	return type;
 }
 
@@ -703,7 +702,6 @@ static shader_t gl_shaders[NUMSHADERTARGETS*2];
 
 INT32 GLBackend_GetShaderType(INT32 type)
 {
-
 #ifdef HAVE_GLES2
 	if (!alpha_test)
 		return type;
@@ -725,7 +723,6 @@ INT32 GLBackend_GetShaderType(INT32 type)
 			break;
 	}
 #endif
-
 	return type;
 }
 
@@ -736,15 +733,31 @@ void GLBackend_SetSurface(INT32 w, INT32 h)
 	pglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-static boolean version_checked = false;
+static boolean gl_first_init = false;
 
 boolean GLBackend_InitContext(void)
 {
 	if (!GLBackend_LoadCommonFunctions())
-		return false;
-
-	if (!version_checked)
 	{
+		;
+		//return false;
+	};
+
+	if (!gl_first_init)
+	{
+#ifdef DEBUG_TO_FILE
+		if (!gllogstream) 
+		{
+			const char *gllogdir = D_Home();
+#ifdef DEFAULTDIR
+			if (gllogdir)
+				gllogstream = fopen(va("%s/"DEFAULTDIR"/ogllog.txt", gllogdir), "wt");
+			else
+#endif
+				gllogstream = fopen("./ogllog.txt", "wt");
+		}
+#endif
+
 		gl_version = pglGetString(GL_VERSION);
 		gl_renderer = pglGetString(GL_RENDERER);
 		gl_extensions = pglGetString(GL_EXTENSIONS);
@@ -753,8 +766,7 @@ boolean GLBackend_InitContext(void)
 		GL_DBG_Printf("GPU: %s\n", gl_renderer);
 		GL_DBG_Printf("Extensions: %s\n", gl_extensions);
 
-		if (strcmp((const char*)gl_renderer, "GDI Generic") == 0 &&
-			strcmp((const char*)gl_version, "1.1.0") == 0)
+		if (strcmp((const char*)gl_renderer, "GDI Generic") == 0 && strcmp((const char*)gl_version, "1.1.0") == 0)
 		{
 			// Oh no... Windows gave us the GDI Generic rasterizer, so something is wrong...
 			// The game will crash later on when unsupported OpenGL commands are encountered.
@@ -767,11 +779,20 @@ boolean GLBackend_InitContext(void)
 					"- GPU drivers are missing or broken. You may need to update your drivers.");
 		}
 
-		version_checked = true;
+		gl_first_init = true;
 	}
 
 	if (gl_extensions == NULL)
 		GLExtension_Init();
+
+#if 1
+	static int majorGL = 0, minorGL = 0;
+	if (sscanf((const char*)gl_version, "%d.%d", &majorGL, &minorGL)
+		&& (!(majorGL == 1 && minorGL <= 3)))
+		supportMipMap = GL_TRUE;
+	else
+		supportMipMap = GL_FALSE;
+#endif
 
 	return true;
 }
@@ -788,7 +809,6 @@ void GLBackend_DeleteModelData(void)
 		ModelListHead = pModel->next;
 		free(pModel);
 	}
-
 	ModelListTail = ModelListHead = NULL;
 }
 
@@ -1129,8 +1149,6 @@ void GLTexture_Flush(void)
 //			a new size
 void GLTexture_FlushScreen(void)
 {
-	// bitten note: star removed some of the fucking code i need here for screenTextures[]... THANKS STAR
-	// star note: love you too bitten
 	if (screentexture)
 		pglDeleteTextures(1, &screentexture);
 	if (startScreenWipe)
@@ -1139,6 +1157,14 @@ void GLTexture_FlushScreen(void)
 		pglDeleteTextures(1, &endScreenWipe);
 	if (finalScreenTexture)
 		pglDeleteTextures(1, &finalScreenTexture);
+
+#if 1
+	// bitten note: star removed some of the fucking code i need here for screenTextures[]... THANKS STAR
+	// star note: love you too bitten
+	pglDeleteTextures(NUMSCREENTEXTURES, screenTextures);
+	for (int i = 0; i < NUMSCREENTEXTURES; i++)
+		screenTextures[i] = 0;
+#endif
 
 	screentexture = 0;
 	startScreenWipe = 0;
@@ -1153,16 +1179,16 @@ void GLTexture_FlushScreen(void)
 // -----------------+
 void GLTexture_SetFilterMode(INT32 mode)
 {
-	MipmapEnabled = GL_FALSE;
+	enabledMipmap = GL_FALSE;
 
 	switch (mode)
 	{
 		case HWD_SET_TEXTUREFILTER_TRILINEAR:
 			mag_filter = GL_LINEAR;
-			if (MipmapSupported)
+			if (supportMipMap)
 			{
 				min_filter = GL_LINEAR_MIPMAP_LINEAR;
-				MipmapEnabled = GL_TRUE;
+				enabledMipmap = GL_TRUE;
 			}
 			else
 				min_filter = GL_LINEAR;
@@ -1183,10 +1209,10 @@ void GLTexture_SetFilterMode(INT32 mode)
 			break;
 		case HWD_SET_TEXTUREFILTER_MIXED3:
 			mag_filter = GL_NEAREST;
-			if (MipmapSupported)
+			if (supportMipMap)
 			{
 				min_filter = GL_LINEAR_MIPMAP_LINEAR;
-				MipmapEnabled = GL_TRUE;
+				enabledMipmap = GL_TRUE;
 			}
 			else
 				min_filter = GL_LINEAR;
@@ -1474,7 +1500,6 @@ void GLExtension_Init(void)
 	GLExtension_vertex_program = true;
 	GLExtension_fragment_program = true;
 #endif
-
 
 	while (ExtensionList[i].name)
 	{
@@ -1764,13 +1789,33 @@ void GL_MSG_Error(const char *format, ...)
 
 	CONS_Alert(CONS_ERROR, "%s", str);
 
+#if 1
+	/// \todo STAR NOTE: improve
 	if (lastglerror)
 		free(lastglerror);
 	lastglerror = strcpy(malloc(strlen(str) + 1), str);
+	VID_DisplayGLError();
+#endif
 
 #ifdef DEBUG_TO_FILE
 	if (!gllogstream)
 		gllogstream = fopen("ogllog.txt", "w");
 	fwrite(str, strlen(str), 1, gllogstream);
 #endif
+}
+
+void VID_DisplayGLError(void)
+{
+	//if (menuactive)
+	{
+		if (lastglerror)
+		{
+			size_t len = strlen(lastglerror);
+			while (lastglerror[len] == '\n' || lastglerror[len] == '\0')
+				lastglerror[len--] = '\0';
+			M_StartMessage(va(M_GetText("OpenGL failed to load:\n\n%s\n\n%s"), lastglerror, M_GetUserActionString(PRESS_A_KEY_MESSAGE)), NULL, MM_NOTHING);
+		}
+		else
+			M_ShowAnyKeyMessage("OpenGL failed to load.\nCheck the console\nor log file for details.\n\n");
+	}
 }

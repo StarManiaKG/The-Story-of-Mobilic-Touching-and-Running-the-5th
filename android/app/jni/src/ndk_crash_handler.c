@@ -10,12 +10,12 @@
 /// \file  ndk_crash_handler.c
 /// \brief Android crash handler
 
-#include "ndk_crash_handler.h"
-#include "jni_android.h"
-
 #include <stdio.h>
 #include <unwind.h>
 #include <dlfcn.h>
+
+#include "ndk_crash_handler.h"
+#include "jni_android.h"
 
 typedef struct BacktraceState
 {
@@ -51,7 +51,7 @@ static void NDKCrashHandler_PrintToLog(FILE *log_file, const char *fmt, ...)
 	if (!log_file)
 		return;
 
-#if 0
+#if 1
 	// STAR NOTE: normal
 	va_list argptr;
 	va_start(argptr, fmt);
@@ -73,7 +73,10 @@ static void NDKCrashHandler_StackTrace(FILE *stacktrace_file)
 	int i;
 
 	if (!count)
+	{
+		NDKCrashHandler_PrintToLog(stacktrace_file, "No Stack Trace could be written!:\n");
 		return;
+	}
 
 	NDKCrashHandler_PrintToLog(stacktrace_file, "Stack trace:\n");
 	for (i = 0; i < count; i++)
