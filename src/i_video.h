@@ -72,10 +72,6 @@ void VID_SetSize(INT32 width, INT32 height);
 */
 boolean VID_CheckRenderer(void);
 
-/**	\brief Load OpenGL mode
-*/
-void VID_StartupOpenGL(void);
-
 /**	\brief Checks if OpenGL loaded
 */
 void VID_CheckGLLoaded(rendermode_t oldrender);

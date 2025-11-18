@@ -990,7 +990,6 @@ boolean CON_Responder(event_t *ev)
 
 	const char *cmd = NULL;
 	INT32 key = ev->key;
-	boolean key_is_console = (key == gamecontrol[GC_CONSOLE][0] || key == gamecontrol[GC_CONSOLE][1]);
 
 	if (chat_on)
 		return false;
@@ -1007,7 +1006,7 @@ boolean CON_Responder(event_t *ev)
 		if (modeattacking || metalrecording || marathonmode)
 			return false;
 
-		if (key_is_console)
+		if (key == gamecontrol[GC_CONSOLE][0] || key == gamecontrol[GC_CONSOLE][1])
 		{
 			if (con_destlines == 0 && I_GetTextInputMode())
 				return false; // some other component is holding keyboard input, don't hijack it!

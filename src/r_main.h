@@ -135,6 +135,8 @@ extern boolean r_renderthings;
 // Called by startup code.
 void R_Init(void);
 
+angle_t R_GetLocalViewRollAngle(player_t *player);
+
 void R_CheckViewMorph(void);
 void R_ApplyViewMorph(void);
 

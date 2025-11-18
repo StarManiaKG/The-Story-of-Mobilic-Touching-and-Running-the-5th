@@ -10,6 +10,7 @@
 //-----------------------------------------------------------------------------
 /// \file  apk_nativescreenres.c
 /// \brief Native screen rendering for SRB2
+/// \todo remove, we have any-res now
 
 #include "apk_nativescreenres.h"
 #include "apk_main.h"
@@ -123,12 +124,18 @@ static void SCR_NativeResDivChanged(void)
 	//CV_StealthSetValue(&cv_nativeres, 1);
 	SCR_ToggleNativeRes();
 
-#if 1
-	// STAR NOTE: Breaks the game on startup lol
+#if 0
 	INT32 w = (INT32)((float)w / android_data.scr_resdiv);
 	INT32 h = (INT32)((float)h / android_data.scr_resdiv);
-	//VID_SetSize(w, h);
-	//SCR_ChangeResolution(w, h, true);
+
+	//INT32 w = (INT32)((float)vid.change.width / android_data.scr_resdiv);
+	//INT32 h = (INT32)((float)vid.change.height / android_data.scr_resdiv);
+
+	//INT32 w = (INT32)((float)vid.width / android_data.scr_resdiv);
+	//INT32 h = (INT32)((float)vid.height / android_data.scr_resdiv);
+
+	//VID_SetSize(w, h); // STAR NOTE: Breaks the game on startup lol
+	//SCR_ChangeResolution(w, h, true); // STAR NOTE: Breaks the game on startup lol
 	SCR_SetWindowSize(w, h, true);
 #endif
 }
@@ -163,7 +170,6 @@ static INT32 SCR_CalcDup(INT32 width, INT32 height)
 {
 	INT32 dupx = max(1, width / BASEVIDWIDTH);
 	INT32 dupy = max(1, height / BASEVIDHEIGHT);
-
 	if (!cv_nativerescompare.value)
 		return ((dupx >= dupy) ? dupx : dupy);
 	else

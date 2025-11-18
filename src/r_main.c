@@ -43,7 +43,6 @@
 
 // Android
 #include "android/apk_nativescreenres.h"
-#include "xtra/xtr_main.h"
 
 // Fineangles in the SCREENWIDTH wide window.
 #define FIELDOFVIEW 2048
@@ -594,6 +593,19 @@ static struct {
 	false
 };
 
+angle_t R_GetLocalViewRollAngle(player_t *player)
+{
+	angle_t ang = player->viewrollangle;
+#if defined(ACCELEROMETER) && defined(ACCELEROMETER_TILT_VIEW)
+	if (cv_useaccelerometer.value && gamestate == GS_LEVEL && player == &players[consoleplayer] && !splitscreen)
+	{
+		fixed_t accelangle = FixedDiv(acceltilt * FRACUNIT, 4096<<FRACBITS);
+		ang += FixedAngle(FixedMul(accelangle, 90<<FRACBITS));
+	}
+#endif
+	return ang;
+}
+
 void R_CheckViewMorph(void)
 {
 	float zoomfactor, rollcos, rollsin;
@@ -602,7 +614,7 @@ void R_CheckViewMorph(void)
 	INT32 end, vx, vy, pos, usedpos;
 	INT32 usedx, usedy, halfwidth = vid.width/2, halfheight = vid.height/2;
 
-	angle_t rollangle = XTRA_R_GetLocalViewRollAngle(&players[displayplayer]);
+	angle_t rollangle = R_GetLocalViewRollAngle(&players[displayplayer]);
 #ifdef WOUGHMP_WOUGHMP
 	fixed_t fisheye = cv_cam2_turnmultiplier.value; // temporary test value
 #endif

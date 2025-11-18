@@ -131,6 +131,10 @@ typedef enum
 	QUIT3MSG4,
 	QUIT3MSG5,
 	QUIT3MSG6,
+
+	QUIT4MSG,
+	QUIT4MSG2,
+
 	NUM_QUITMESSAGES
 } text_enum;
 
@@ -1295,8 +1299,8 @@ static menuitem_t OP_P1ControlsMenu[] =
 	{IT_STRING  | IT_CVAR,   NULL, "Automatic braking", &cv_autobrake, 80},
 	{IT_CALL    | IT_STRING, NULL, "Play Style...", M_Setup1PPlaystyleMenu, 90},
 
-	// Accelerometer settings
 #ifdef ACCELEROMETER
+	// Accelerometer settings
 	{IT_STRING | IT_CVAR, NULL,                "Use accelerometer", &cv_useaccelerometer, 110},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Accel. scale",      &cv_accelscale, 120},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Accel. tilt",       &cv_acceltilt, 130},
@@ -1745,27 +1749,27 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 
 	{IT_HEADER, NULL, "General", NULL, 25},
 	{IT_STRING|IT_CVAR,         NULL, "Shaders",              &cv_glshaders,            31},
-	{IT_STRING|IT_CVAR,         NULL, "Palette rendering",   &cv_glpaletterendering,   36},
+	{IT_STRING|IT_CVAR,         NULL, "Palette rendering",    &cv_glpaletterendering,   36},
 	{IT_STRING|IT_CVAR,         NULL, "Lack of perspective",  &cv_glshearing,           41},
 	{IT_STRING|IT_CVAR,         NULL, "Field of view",        &cv_fov,                  46},
 
-	{IT_HEADER, NULL, "Miscellaneous", NULL, 51},
-	{IT_STRING|IT_CVAR,         NULL, "Texture filter",       &cv_glfiltermode,         57},
-	{IT_STRING|IT_CVAR,         NULL, "Anisotropic",          &cv_glanisotropicmode,    62},
-	{IT_STRING|IT_CVAR,         NULL, "Bit depth",            &cv_scr_depth,            67},
+	{IT_HEADER, NULL, "Miscellaneous", NULL, 55},
+	{IT_STRING|IT_CVAR,         NULL, "Texture filter",       &cv_glfiltermode,         61},
+	{IT_STRING|IT_CVAR,         NULL, "Anisotropic",          &cv_glanisotropicmode,    66},
+	{IT_STRING|IT_CVAR,         NULL, "Bit depth",            &cv_scr_depth,            71},
 
 #ifdef HAVE_GL_FRAMEBUFFER
-	{IT_HEADER, NULL, "Framebuffer", NULL, 77},
-	{IT_STRING|IT_CVAR,         NULL, "Framebuffer objects",  &cv_glframebuffer,        83},
-	{IT_STRING|IT_CVAR,         NULL, "Depth buffer quality", &cv_glrenderbufferdepth,  88},
+	{IT_HEADER, NULL, "Framebuffer", NULL, 80},
+	{IT_STRING|IT_CVAR,         NULL, "Framebuffer objects",  &cv_glframebuffer,        86},
+	{IT_STRING|IT_CVAR,         NULL, "Depth buffer quality", &cv_glrenderbufferdepth,  91},
 #endif
 
 #ifdef ALAM_LIGHTING
-	{IT_SUBMENU|IT_STRING,      NULL, "Lighting...",          &OP_OpenGLLightingDef,    92},
+	{IT_SUBMENU|IT_STRING,      NULL, "Lighting...",         &OP_OpenGLLightingDef,    100},
 #endif
 
 #if defined (_WINDOWS) && (!(defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)))
-	{IT_STRING|IT_CVAR,         NULL, "Fullscreen",          &cv_fullscreen,          104},
+	{IT_STRING|IT_CVAR,         NULL, "Fullscreen",          &cv_fullscreen,           105},
 #endif
 };
 
@@ -3886,7 +3890,6 @@ static INT32 M_TSHandleTextField(char *buffer, size_t length)
 		M_CloseVirtualKeyboard();
 		return -1;
 	}
-
 	return 0;
 }
 
@@ -3904,7 +3907,6 @@ static INT32 M_TSHandleTextFieldCVar(consvar_t *cvar)
 		M_CloseVirtualKeyboard();
 		return -1;
 	}
-
 	return 0;
 }
 #endif
@@ -4875,8 +4877,10 @@ static boolean M_HandleFingerUpEvent(event_t *ev, INT32 *ch)
 
 		if (selection == M_IsTouchingMenuSelection(x, y, &slkey, &cv))
 		{
+#ifdef VIRTUAL_KEYBOARD
 			if (I_KeyboardOnScreen() && !M_TSNav_OnTextField())
 				M_CloseVirtualKeyboard();
+#endif
 
 			switch (currentMenu->menustyle)
 			{
@@ -4910,9 +4914,14 @@ static boolean M_HandleFingerUpEvent(event_t *ev, INT32 *ch)
 				default:
 					if (itemOn == selection)
 					{
+#ifdef VIRTUAL_KEYBOARD
 						if (I_KeyboardOnScreen() && M_TSNav_OnTextField())
+						{
 							M_CloseVirtualKeyboard();
-						else if (cv_touchnavmethod.value == 0 && !((currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_CVAR && !cv))
+							break;
+						}
+#endif
+						if (cv_touchnavmethod.value == 0 && !((currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_CVAR && !cv))
 							(*ch) = KEY_ENTER;
 					}
 					else if (!((currentMenu->menuitems[selection].status & IT_TYPE) & IT_SPACE))
@@ -4929,8 +4938,10 @@ static boolean M_HandleFingerUpEvent(event_t *ev, INT32 *ch)
 				(*ch) = slkey;
 		}
 	}
+#ifdef VIRTUAL_KEYBOARD
 	else if (I_KeyboardOnScreen())
 		M_CloseVirtualKeyboard();
+#endif
 
 done:
 	finger->type.menu = false;
@@ -5945,30 +5956,33 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummyloadless);
 	CV_RegisterVar(&cv_dummycutscenes);
 
-	quitmsg[QUITMSG] = M_GetText("Eggman's tied explosives\nto your girlfriend, and\nwill activate them if\nyou press the 'Y' key!\nPress 'N' to save her!\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG1] = M_GetText("What would Tails say if\nhe saw you quitting the game?\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG2] = M_GetText("Hey!\nWhere do ya think you're goin'?\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG3] = M_GetText("Forget your studies!\nPlay some more!\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG4] = M_GetText("You're trying to say you\nlike Sonic 2K6 better than\nthis, right?\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG5] = M_GetText("Don't leave yet -- there's a\nsuper emerald around that corner!\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG6] = M_GetText("You'd rather work than play?\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG7] = M_GetText("Go ahead and leave. See if I care...\n*sniffle*\n\n(Press 'Y' to quit)");
+	quitmsg[QUITMSG] = M_GetText("Eggman's tied explosives\nto your girlfriend, and\nwill activate them if\nyou press the 'Y' key!\nPress 'N' to save her!\n");
+	quitmsg[QUITMSG1] = M_GetText("What would Tails say if\nhe saw you quitting the game?\n");
+	quitmsg[QUITMSG2] = M_GetText("Hey!\nWhere do ya think you're goin'?\n");
+	quitmsg[QUITMSG3] = M_GetText("Forget your studies!\nPlay some more!\n");
+	quitmsg[QUITMSG4] = M_GetText("You're trying to say you\nlike Sonic 2K6 better than\nthis, right?\n");
+	quitmsg[QUITMSG5] = M_GetText("Don't leave yet -- there's a\nsuper emerald around that corner!\n");
+	quitmsg[QUITMSG6] = M_GetText("You'd rather work than play?\n");
+	quitmsg[QUITMSG7] = M_GetText("Go ahead and leave. See if I care...\n*sniffle*\n");
 
-	quitmsg[QUIT2MSG] = M_GetText("If you leave now,\nEggman will take over the world!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT2MSG1] = M_GetText("Don't quit!\nThere are animals\nto save!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT2MSG2] = M_GetText("Aw c'mon, just bop\na few more robots!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT2MSG3] = M_GetText("Did you get all those Chaos Emeralds?\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT2MSG4] = M_GetText("If you leave, I'll use\nmy spin attack on you!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT2MSG5] = M_GetText("Don't go!\nYou might find the hidden\nlevels!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT2MSG6] = M_GetText("Hit the 'N' key, Sonic!\nThe 'N' key!\n\n(Press 'Y' to quit)");
+	quitmsg[QUIT2MSG] = M_GetText("If you leave now,\nEggman will take over the world!\n");
+	quitmsg[QUIT2MSG1] = M_GetText("Don't quit!\nThere are animals\nto save!\n");
+	quitmsg[QUIT2MSG2] = M_GetText("Aw c'mon, just bop\na few more robots!\n");
+	quitmsg[QUIT2MSG3] = M_GetText("Did you get all those Chaos Emeralds?\n");
+	quitmsg[QUIT2MSG4] = M_GetText("If you leave, I'll use\nmy spin attack on you!\n");
+	quitmsg[QUIT2MSG5] = M_GetText("Don't go!\nYou might find the hidden\nlevels!\n");
+	quitmsg[QUIT2MSG6] = M_GetText("Hit the 'N' key, Sonic!\nThe 'N' key!\n");
 
-	quitmsg[QUIT3MSG] = M_GetText("Are you really going to give up?\nWe certainly would never give you up.\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT3MSG1] = M_GetText("Come on, just ONE more netgame!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT3MSG2] = M_GetText("Press 'N' to unlock\nthe Ultimate Cheat!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT3MSG3] = M_GetText("Why don't you go back and try\njumping on that house to\nsee what happens?\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT3MSG4] = M_GetText("Every time you press 'Y', an\nSRB2 Developer cries...\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT3MSG5] = M_GetText("You'll be back to play soon, though...\n......right?\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT3MSG6] = M_GetText("Aww, is Egg Rock Zone too\ndifficult for you?\n\n(Press 'Y' to quit)");
+	quitmsg[QUIT3MSG] = M_GetText("Are you really going to give up?\nWe certainly would never give you up.\n");
+	quitmsg[QUIT3MSG1] = M_GetText("Come on, just ONE more netgame!\n");
+	quitmsg[QUIT3MSG2] = M_GetText("Press 'N' to unlock\nthe Ultimate Cheat!\n");
+	quitmsg[QUIT3MSG3] = M_GetText("Why don't you go back and try\njumping on that house to\nsee what happens?\n");
+	quitmsg[QUIT3MSG4] = M_GetText("Every time you press 'Y', an\nSRB2 Developer cries...\n");
+	quitmsg[QUIT3MSG5] = M_GetText("You'll be back to play soon, though...\n......right?\n");
+	quitmsg[QUIT3MSG6] = M_GetText("Aww, is Egg Rock Zone too\ndifficult for you?\n");
+
+	quitmsg[QUIT4MSG] = M_GetText("You're trying to say you\nlike Sonic Dash better than\nthis, right?\n");
+	quitmsg[QUIT4MSG2] = M_GetText("You'd rather chat than play?\n");
 
 	/*
 	Well the menu sucks for forcing us to have an item set
@@ -9014,8 +9028,13 @@ static void M_HandleAddons(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
+#ifdef VIRTUAL_KEYBOARD
+	if (!I_KeyboardOnScreen())
+		M_HandleAddonsTextInput(choice);
+	else
+#endif
 #ifdef TOUCHINPUTS
-	if (choice == KEY_DEL || choice == KEY_BACKSPACE || !I_KeyboardOnScreen())
+	if (choice == KEY_DEL || choice == KEY_BACKSPACE)
 #endif
 		M_HandleAddonsTextInput(choice);
 
@@ -9282,7 +9301,9 @@ loop_done:
 			break;
 	}
 
+#ifdef VIRTUAL_KEYBOARD
 	if (!I_KeyboardOnScreen())
+#endif
 	{
 		sx = x - (21 + 5 + 16);
 		sy = BASEVIDHEIGHT - currentMenu->y + 1;
@@ -9314,8 +9335,10 @@ loop_done:
 	}
 
 done:
+#ifdef VIRTUAL_KEYBOARD
 	if (I_KeyboardOnScreen())
 		M_CloseVirtualKeyboard();
+#endif
 	return true;
 }
 #endif
@@ -11894,7 +11917,9 @@ static void M_GetSaveSelectSlotPosition(INT32 i, INT32 *retx, INT32 *rety)
 
 static void M_ResetSaveSelectFX(fixed_t new_scroll, fixed_t new_offset)
 {
+#ifdef TOUCHINPUTS
 	M_ResetMenuTouchFX(&saveselectfx);
+#endif
 	loadgamescroll = ((new_scroll != -1) ? new_scroll : loadgamescroll);
 	loadgameoffset = ((new_offset != -1) ? new_offset : loadgameoffset);
 }
@@ -16749,8 +16774,10 @@ TSNAVHANDLER(PlayerSetup)
 	}
 
 done:
+#ifdef VIRTUAL_KEYBOARD
 	if (I_KeyboardOnScreen())
 		M_CloseVirtualKeyboard();
+#endif
 	return true;
 }
 #endif
@@ -18364,9 +18391,8 @@ void M_QuitResponse(INT32 ch)
 {
 	tic_t ptime;
 	INT32 mrand;
-
-	// SRB2Android
 	boolean declined = false;
+
 	if (inputmethod != INPUTMETHOD_TVREMOTE)
 	{
 		// Normal
@@ -18409,24 +18435,14 @@ void M_QuitResponse(INT32 ch)
 	I_Quit();
 }
 
-#ifdef BREADCRUMB
-static void M_BreadcrumbQuitResponse(INT32 ch)
-{
-	M_QuitResponse(ch);
-}
-#endif
-
 static void M_AskQuitSRB2(void *routine, INT32 uatype)
 {
 	const char *rnd_quit_message = quitmsg[M_RandomKey(NUM_QUITMESSAGES)];
-	static char *message = NULL;
+	char *message = V_WordWrap(0, 21*8, V_ALLOWLOWERCASE, rnd_quit_message);
 
-	Z_Free(message);
-	message = V_WordWrap(0, 21*8, V_ALLOWLOWERCASE, rnd_quit_message);
-
-	strcpy(message, rnd_quit_message);
-	message[strlen(message) - 20 - 1] = '\0'; // (20 - 1) removes the control prompt
+	//strcpy(message, rnd_quit_message);
 	M_StartMessage(M_GetText(message), routine, MM_YESNO);
+	Z_Free(message);
 
 	android_data.prompt_leavegame = uatype;
 }
@@ -18438,6 +18454,11 @@ static void M_QuitSRB2(INT32 choice)
 }
 
 #ifdef BREADCRUMB
+static void M_BreadcrumbQuitResponse(INT32 ch)
+{
+	M_QuitResponse(ch);
+}
+
 static void M_BreadcrumbQuitSRB2(INT32 choice)
 {
 	(void)choice;

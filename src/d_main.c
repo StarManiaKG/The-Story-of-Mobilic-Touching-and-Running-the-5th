@@ -367,13 +367,12 @@ static void D_Display(void)
 	}
 
 #ifdef HWRENDER
-#if 0
-	// Display the last renderer switching error, if there was any
 	if (android_data.renderer_switcherror == render_opengl)
+	{
+		// Display the last renderer switching error, if there was any
 		VID_DisplayGLError();
-#endif
-	// Clear the last renderer switching error
-	android_data.renderer_switcherror = 0;
+	}
+	android_data.renderer_switcherror = 0; // Clear the last renderer switching error
 #endif
 
 	// draw buffered stuff to screen
@@ -1410,7 +1409,7 @@ void D_SRB2Main(void)
 	ChangeDirForUrlHandler();
 
 #if defined(__ANDROID__)
-	CONS_Printf("D_SetupHome()...");
+	CONS_Printf("D_SetupHome()...\n");
 	D_SetupHome();
 #endif
 
@@ -1435,9 +1434,11 @@ void D_SRB2Main(void)
 	if (devparm)
 		CONS_Printf(M_GetText("Development mode ON.\n"));
 
+#if 1
 #if !defined(__ANDROID__)
-	CONS_Printf("D_SetupHome()...");
+	CONS_Printf("D_SetupHome()...\n");
 	D_SetupHome();
+#endif
 #endif
 
 	// seed M_Random because it is necessary; seed P_Random for scripts that

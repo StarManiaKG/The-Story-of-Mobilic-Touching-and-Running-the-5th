@@ -157,6 +157,12 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #define UNIXBACKTRACE
 #endif
 
+#if defined(__ANDROID__)
+#undef NEWSIGNALHANDLER
+#undef UNIXBACKTRACE
+#endif
+//#define NEWSIGNALHANDLER
+
 // Locations to directly check for srb2.pk3 in
 const char *wadDefaultPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)

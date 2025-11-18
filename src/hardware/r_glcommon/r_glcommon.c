@@ -3,16 +3,18 @@
 // Copyright (C) 1998-2021 by Sonic Team Junior.
 // Copyright (C) 2020-2023 by SRB2 Mobile Project.
 // Copyright (C) 2025 by Bitten2Up.
+// Copyright (C) 2025 by StarManiaKG.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
 /// \file r_glcommon.c
-/// \brief Common OpenGL functions shared by OpenGL backends
+/// \brief Common OpenGL functions and structs shared by our backends
 
 #include <stdarg.h>
 
+#define NO_DRV_DEFINED_HERE // no hw_drv here, we do it later
 #include "r_glcommon.h"
 
 #include "../../doomdata.h"
@@ -25,16 +27,26 @@
 #include "../shaders/gl_shaders.h"
 #endif
 
-const GLubyte *gl_version = NULL;
-const GLubyte *gl_renderer = NULL;
-const GLubyte *gl_extensions = NULL;
+#define DEBUG_TO_CONSOLE
+#define DEBUG_TO_FILE
 
 // ==========================================================================
 //                                                                    GLOBALS
 // ==========================================================================
 
-GLRGBAFloat white = {1.0f, 1.0f, 1.0f, 1.0f};
-GLRGBAFloat black = {0.0f, 0.0f, 0.0f, 1.0f};
+#ifdef DEBUG_TO_FILE
+#include "../../d_main.h" // D_Home
+FILE *gllogstream;
+#endif
+
+const GLubyte *gl_version = NULL;
+const GLubyte *gl_renderer = NULL;
+const GLubyte *gl_extensions = NULL;
+
+GLRGBAFloat white = { 1.0f, 1.0f, 1.0f, 1.0f }; // [4]
+GLRGBAFloat black = { 0.0f, 0.0f, 0.0f, 1.0f }; // [4]
+const GLubyte white_bytes[4] = { 255, 255, 255, 255 };
+//pglColor4f(white.red, white.green, white.blue, white.alpha);
 
 RGBA_t *textureBuffer = NULL;
 size_t textureBufferSize = 0;
@@ -43,32 +55,45 @@ RGBA_t  myPaletteData[256];
 GLint   screen_width    = 0; // used by Draw2DLine()
 GLint   screen_height   = 0;
 GLbyte  screen_depth    = 0;
-GLint   textureformatGL = 0;
-GLint maximumAnisotropy = 0;
 
-GLboolean enabledMipmap = GL_FALSE;
-GLboolean supportMipMap = GL_FALSE;
+/**	\brief OpenGL flags for video driver
+*/
+GLint   oglflags        = 0;
+GLint   textureformatGL = 0;
+GLboolean mipmapEnabled = GL_FALSE;
+GLboolean mipmapSupported = GL_FALSE;
 GLint min_filter = GL_LINEAR;
 GLint mag_filter = GL_LINEAR;
 GLint anisotropic_filter = 0;
+GLint maximumAnisotropy = 0;
 
 boolean alpha_test = false;
 float alpha_threshold = 0.0f;
 
-float near_clipping_plane = NZCLIP_PLANE;
+float NEAR_CLIPPING_PLANE = NZCLIP_PLANE;
 
 // Linked list of all textures.
 FTextureInfo *TexCacheTail = NULL;
 FTextureInfo *TexCacheHead = NULL;
 
+// Linked list of all lighttables.
+LTListItem *LightTablesTail = NULL;
+LTListItem *LightTablesHead = NULL;
+
+// Linked list of all models.
+GLModelList *ModelListTail = NULL;
+GLModelList *ModelListHead = NULL;
+
 GLuint      tex_downloaded  = 0;
+GLuint      lt_downloaded   = 0; // currently bound lighttable texture
 GLfloat     fov             = 90.0f;
 FBITFIELD   CurrentPolyFlags;
 
-GLuint screentexture = 0;
-GLuint startScreenWipe = 0;
-GLuint endScreenWipe = 0;
-GLuint finalScreenTexture = 0;
+// Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
+//			flush all of the stored textures, leaving them unavailable at times such as between levels
+//			These need to start at 0 and be set to their number, and be reset to 0 when deleted so that intel GPUs
+//			can know when the textures aren't there, as textures are always considered resident in their virtual memory
+GLuint screenTextures[NUMSCREENTEXTURES] = {0};
 
 static GLuint blank_texture_num = 0;
 
@@ -76,9 +101,6 @@ static GLuint blank_texture_num = 0;
 GLuint FramebufferObject, FramebufferTexture;
 GLuint RenderbufferObject, RenderbufferDepthBits;
 GLboolean FramebufferEnabled = GL_FALSE, RenderToFramebuffer = GL_FALSE;
-
-static GLuint LastRenderbufferDepthBits;
-
 GLenum RenderbufferFormats[NumRenderbufferFormats] =
 {
 	GL_DEPTH_COMPONENT,
@@ -87,27 +109,14 @@ GLenum RenderbufferFormats[NumRenderbufferFormats] =
 	GL_DEPTH_COMPONENT32,
 	GL_DEPTH_COMPONENT32F
 };
+static GLuint LastRenderbufferDepthBits;
 #endif
 
-// Linked list of all models.
-static GLModelList *ModelListTail = NULL;
-static GLModelList *ModelListHead = NULL;
-
 boolean model_lighting = false;
-
-// Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
-//			flush all of the stored textures, leaving them unavailable at times such as between levels
-//			These need to start at 0 and be set to their number, and be reset to 0 when deleted so that intel GPUs
-//			can know when the textures aren't there, as textures are always considered resident in their virtual memory
-GLuint screenTextures[NUMSCREENTEXTURES] = {0};
 
 RGBA_t screenPalette[256] = {0}; // the palette for the postprocessing step in palette rendering
 GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
 GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
-
-// Linked list of all lighttables.
-LTListItem *LightTablesTail = NULL;
-LTListItem *LightTablesHead = NULL;
 
 // ==========================================================================
 //                                                                 EXTENSIONS
@@ -149,34 +158,19 @@ static FExtensionList const ExtensionList[] = {
 static void PrintExtensions(const GLubyte *extensions);
 
 // ==========================================================================
-//                                                                    BACKEND
-// ==========================================================================
-
-#if 0
-boolean GLBackend_useprogram = false;
-#endif
-
-// ==========================================================================
 //                                                           OPENGL FUNCTIONS
 // ==========================================================================
 
+/* Main */
 PFNglClear pglClear;
 PFNglGetIntegerv pglGetIntegerv;
 PFNglGetString pglGetString;
 
 #ifndef STATIC_OPENGL
+
 /* Miscellaneous */
-#if 0
-// STAR NOTE: bro
-PFNglClear pglClear;
-#endif
 PFNglGetFloatv pglGetFloatv;
 PFNglPolygonMode pglPolygonMode;
-#if 0
-// STAR NOTE: bro
-PFNglGetIntegerv pglGetIntegerv;
-PFNglGetString pglGetString;
-#endif
 PFNglGetError pglGetError;
 PFNglClearColor pglClearColor;
 PFNglColorMask pglColorMask;
@@ -184,17 +178,10 @@ PFNglAlphaFunc pglAlphaFunc;
 PFNglBlendFunc pglBlendFunc;
 PFNglCullFace pglCullFace;
 PFNglPolygonOffset pglPolygonOffset;
-#if 1
-// STAR NOTE: hi
 PFNglScissor pglScissor;
-#endif
 PFNglEnable pglEnable;
 PFNglDisable pglDisable;
-#if 1
-// STAR NOTE: still hi
-PFNglGetFloatv pglGetFloatv;
-PFNglPolygonMode pglPolygonMode;
-#endif
+
 /* Depth buffer */
 PFNglDepthFunc pglDepthFunc;
 PFNglDepthMask pglDepthMask;
@@ -225,49 +212,38 @@ PFNglBindTexture pglBindTexture;
 /* Texture mapping */
 PFNglCopyTexImage2D pglCopyTexImage2D;
 PFNglCopyTexSubImage2D pglCopyTexSubImage2D;
+
+/* 1.2 functions for 3D textures */
 PFNglTexImage3D pglTexImage3D;
 
-#if 1
-// STAR NOTE: hi
 /* 1.3 functions for multitexturing */
 PFNglMultiTexCoord2f pglMultiTexCoord2f;
 PFNglMultiTexCoord2fv pglMultiTexCoord2fv;
-#endif
-
-#endif
-
-//
-// Multitexturing
-//
-
-#ifndef STATIC_OPENGL
 PFNglActiveTexture pglActiveTexture;
 PFNglClientActiveTexture pglClientActiveTexture;
-#endif
+
+#endif // STATIC_OPENGL
 
 //
 // Mipmapping
 //
 
-// STAR NOTE: testing testing 1234
-
-//#ifdef HAVE_GLES
+// OpenGLES-only
 PFNglGenerateMipmap pglGenerateMipmap;
-//#endif
 
 //
 // Depth functions
 //
 
-// STAR NOTE: testing testing 1234
-
-//#ifndef HAVE_GLES
-PFNglClearDepth pglClearDepth;
-PFNglDepthRange pglDepthRange;
-//#else
-PFNglClearDepthf pglClearDepthf;
-PFNglDepthRangef pglDepthRangef;
-//#endif
+#if !defined (HAVE_GLES) && !defined (HAVE_GLES2)
+	// OpenGL-only
+	PFNglClearDepth pglClearDepth;
+	PFNglDepthRange pglDepthRange;
+#else
+	// OpenGLES-only
+	PFNglClearDepthf pglClearDepthf;
+	PFNglDepthRangef pglDepthRangef;
+#endif
 
 //
 // Legacy functions
@@ -275,6 +251,7 @@ PFNglDepthRangef pglDepthRangef;
 
 #ifndef HAVE_GLES2
 #ifndef STATIC_OPENGL
+
 /* Transformation */
 PFNglMatrixMode pglMatrixMode;
 PFNglViewport pglViewport;
@@ -299,17 +276,15 @@ PFNglShadeModel pglShadeModel;
 PFNglLightfv pglLightfv;
 PFNglLightModelfv pglLightModelfv;
 PFNglMaterialfv pglMaterialfv;
-#if 1
-// STAR NOTE: hi
 PFNglMateriali pglMateriali;
-#endif
 
 /* Texture mapping */
 PFNglTexEnvi pglTexEnvi;
+
 #endif
 #endif // HAVE_GLES2
 
-// Color
+/* Coloring */
 #ifdef HAVE_GLES
 PFNglColor4f pglColor4f;
 #else
@@ -339,10 +314,165 @@ PFNglRenderbufferStorage pglRenderbufferStorage;
 PFNglFramebufferRenderbuffer pglFramebufferRenderbuffer;
 #endif
 
-#if 1
-// STAR NOTE: hi
-/* Vertex Attrib */
+// Technically can be used by any framework,
+// but only used by GLES2 at the moment.
 PFNglVertexAttribPointer pglVertexAttribPointer;
+
+// ==========================================================================
+//                                                             ERROR HANDLING
+// ==========================================================================
+
+struct GLError
+{
+	char *func;
+	char *file;
+	int line;
+	GLenum error;
+};
+
+static struct GLError *gl_past_errors_list = NULL;
+static size_t gl_past_errors_list_size = 0;
+
+static const char *GetGLError(GLenum error)
+{
+	if (error == GL_NO_ERROR)
+		return "GL_NO_ERROR";
+
+	switch (error)
+	{
+		case GL_INVALID_ENUM:                  return "GL_INVALID_ENUM";
+		case GL_INVALID_VALUE:                 return "GL_INVALID_VALUE";
+		case GL_INVALID_OPERATION:             return "GL_INVALID_OPERATION";
+		case GL_OUT_OF_MEMORY:                 return "GL_OUT_OF_MEMORY";
+#ifdef HAVE_GL_FRAMEBUFFER
+		case GL_INVALID_FRAMEBUFFER_OPERATION: return "GL_INVALID_FRAMEBUFFER_OPERATION";
+#endif
+		default:                               return "unknown error";
+	}
+}
+
+static boolean FindPastError(const char *func, const char *file, int line, GLenum error)
+{
+	size_t i = 0;
+
+	if (gl_past_errors_list)
+	{
+		for (; i < gl_past_errors_list_size; i++)
+		{
+			if (!gl_past_errors_list[i].func || !gl_past_errors_list[i].file)
+				break;
+			if (strcmp(gl_past_errors_list[i].func, func))
+				break;
+			if (strcmp(gl_past_errors_list[i].file, file))
+				break;
+			if (gl_past_errors_list[i].line != line)
+				break;
+			if (gl_past_errors_list[i].error != error)
+				break;
+			return true;
+		}
+	}
+
+	gl_past_errors_list_size++;
+	gl_past_errors_list = realloc(gl_past_errors_list, sizeof(struct GLError) * gl_past_errors_list_size);
+
+	if (!gl_past_errors_list)
+	{
+		i = 0;
+		gl_past_errors_list_size = 1;
+		gl_past_errors_list = malloc(sizeof(struct GLError));
+		if (!gl_past_errors_list)
+			return false;
+	}
+
+	struct GLError *err = &gl_past_errors_list[i];
+	err->func = malloc(strlen(func) + 1);
+	err->file = malloc(strlen(file) + 1);
+	err->line = line;
+	err->error = error;
+
+	if (err->func)
+		memcpy(err->func, func, strlen(func) + 1);
+	if (err->file)
+		memcpy(err->file, file, strlen(file) + 1);
+
+	return false;
+}
+
+void GLBackend_CheckError(const char *func, const char *file, int line)
+{
+	GLenum error;
+
+	if (pglGetError == NULL)
+	{
+		GL_DBG_Printf("pglGetError wasn't initialized\n");
+		return;
+	}
+
+	error = pglGetError();
+	while (error != GL_NO_ERROR)
+	{
+		if (!FindPastError(func, file, line, error))
+			GL_DBG_Printf("%s (%s, line %d): %s\n", func, file, line, GetGLError(error));
+		error = pglGetError();
+	}
+}
+
+#define CHECK_GL() CHECK_GL_ERROR("r_glcommon.c")
+
+// ==========================================================================
+//                                                                       CORE
+// ==========================================================================
+
+static INT32 CheckFunctionList(const char **list)
+{
+	INT32 i = 0;
+	INT32 errors = 0;
+
+	for (; list[i]; i++)
+	{
+		size_t len = strlen(list[i]) + 3;
+		char *funcname = malloc(len);
+
+		snprintf(funcname, len, "gl%s", list[i]);
+		if (!GLBackend_GetFunction(funcname))
+			errors++;
+
+		free(funcname);
+	}
+	return errors;
+}
+
+#if 0
+// STAR NOTE: hi bitten
+typedef struct
+{
+	void (**func);
+	const char *func_name;
+} gl_funclist_t;
+
+static INT32 LoadFunctionList(gl_funclist_t *list)
+{
+	INT32 i = 0;
+	INT32 errors = 0;
+
+	for (; list[i].func; i++)
+	{
+		size_t len = strlen(list[i].func_name) + 3;
+		char *funcname = malloc(len);
+		void *func;
+
+		snprintf(funcname, len, "gl%s", list[i].func_name);
+		func = GLBackend_GetFunction(funcname);
+		if (func != NULL)
+			(*list[i].func) = func;
+		else
+			errors++;
+
+		free(funcname);
+	}
+	return errors;
+}
 #endif
 
 boolean GLBackend_LoadCommonFunctions(void)
@@ -355,14 +485,20 @@ boolean GLBackend_LoadCommonFunctions(void)
 	GETOPENGLFUNC(BlendFunc)
 	GETOPENGLFUNC(CullFace)
 	GETOPENGLFUNC(PolygonOffset)
+	GETOPENGLFUNC(Scissor)
 	GETOPENGLFUNC(Enable)
 	GETOPENGLFUNC(Disable)
 	GETOPENGLFUNC(GetFloatv)
 	GETOPENGLFUNC(GetIntegerv)
 	GETOPENGLFUNC(GetString)
-	GETOPENGLFUNCTRY(PolygonMode)
 	GETOPENGLFUNC(GetError)
+	GETOPENGLFUNCTRY(PolygonMode)
 
+//#ifndef HAVE_GLES2
+#if !defined (HAVE_GLES2) && !defined (HAVE_GLES)
+	GETOPENGLFUNC(ClearDepth)
+	GETOPENGLFUNC(DepthRange)
+#endif
 	GETOPENGLFUNC(DepthFunc)
 	GETOPENGLFUNC(DepthMask)
 
@@ -374,6 +510,9 @@ boolean GLBackend_LoadCommonFunctions(void)
 	GETOPENGLFUNC(PixelStorei)
 	GETOPENGLFUNC(ReadPixels)
 
+#ifndef HAVE_GLES2
+	GETOPENGLFUNC(TexEnvi)
+#endif
 	GETOPENGLFUNC(TexParameteri)
 	GETOPENGLFUNCTRY(TexImage1D) // dammit gles
 	GETOPENGLFUNC(TexImage2D)
@@ -394,7 +533,6 @@ boolean GLBackend_LoadLegacyFunctions(void)
 {
 #ifndef HAVE_GLES2
 	GETOPENGLFUNC(MatrixMode)
-	GETOPENGLFUNC(Viewport)
 	GETOPENGLFUNC(PushMatrix)
 	GETOPENGLFUNC(PopMatrix)
 	GETOPENGLFUNC(LoadIdentity)
@@ -407,6 +545,11 @@ boolean GLBackend_LoadLegacyFunctions(void)
 	GETOPENGLFUNC(Lightfv)
 	GETOPENGLFUNC(LightModelfv)
 	GETOPENGLFUNC(Materialfv)
+	GETOPENGLFUNC(Materiali)
+
+	// Not used by anything currently
+	GETOPENGLFUNCTRY(MultiTexCoord2f)
+	GETOPENGLFUNCTRY(MultiTexCoord2fv)
 #endif
 
 	return true;
@@ -415,38 +558,6 @@ boolean GLBackend_LoadLegacyFunctions(void)
 // ==========================================================================
 //                                                                  FUNCTIONS
 // ==========================================================================
-
-static const char *GetGLError(GLenum error)
-{
-	if (error == GL_NO_ERROR)
-		return "GL_NO_ERROR";
-
-	switch (error)
-	{
-		case GL_INVALID_ENUM:                  return "GL_INVALID_ENUM";
-		case GL_INVALID_VALUE:                 return "GL_INVALID_VALUE";
-		case GL_INVALID_OPERATION:             return "GL_INVALID_OPERATION";
-		case GL_OUT_OF_MEMORY:                 return "GL_OUT_OF_MEMORY";
-#ifdef GL_INVALID_FRAMEBUFFER_OPERATION
-		/* StarManiaKG: sometimes this doesn't get defined.
-			How? Beyond me.
-			Hence, we just do things like this instead.
-			Easier for me, easier for the compiler.
-		*/
-		case GL_INVALID_FRAMEBUFFER_OPERATION: return "GL_INVALID_FRAMEBUFFER_OPERATION";
-#endif
-		default:                               return "unknown error";
-	}
-}
-
-#if 0
-static void CheckGLError(const char *from)
-{
-	GLenum error = pglGetError();
-	if (error != GL_NO_ERROR)
-		GL_DBG_Printf("%s: %s\n", from, GetGLError(error));
-}
-#endif
 
 static void SetBlendEquation(GLenum mode)
 {
@@ -678,34 +789,11 @@ INT32 GLBackend_InvertAlphaTestShader(INT32 type)
 	return type;
 }
 
-#if 0
-// STAR NOTE: come back here right now stupid
-
-typedef struct
-{
-	int base_shader; // index of base shader_t
-	int custom_shader; // index of custom shader_t
-} shadertarget_t;
-
-typedef struct
-{
-	char *vertex;
-	char *fragment;
-	boolean compiled;
-} shader_t; // these are in an array and accessed by indices
-
-// the array has NUMSHADERTARGETS entries for base shaders and for custom shaders
-// the array could be expanded in the future to fit "dynamic" custom shaders that
-// aren't fixed to shader targets
-static shader_t gl_shaders[NUMSHADERTARGETS*2];
-#endif
-
 INT32 GLBackend_GetShaderType(INT32 type)
 {
 #ifdef HAVE_GLES2
 	if (!alpha_test)
 		return type;
-
 	switch (type)
 	{
 		case SHADER_NONE:
@@ -726,41 +814,46 @@ INT32 GLBackend_GetShaderType(INT32 type)
 	return type;
 }
 
-void GLBackend_SetSurface(INT32 w, INT32 h)
+// --------------------+
+// GLBackend_SetSurface: Sets GL surface and video mode on success.
+// --------------------+
+boolean GLBackend_SetSurface(INT32 w, INT32 h)
 {
+	INT32 cbpp = ((cv_scr_depth.value < 16) ? 16 : cv_scr_depth.value);
+
+	textureformatGL = ((cbpp > 16) ? GL_RGBA : GL_RGB5_A1);
+	oglflags = 0;
+
 	GLBackend_SetModelView(w, h);
 	GLBackend_SetStates();
 	pglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	return true;
 }
 
 static boolean gl_first_init = false;
+static int majorGL = 0, minorGL = 0;
 
 boolean GLBackend_InitContext(void)
 {
 	if (!GLBackend_LoadCommonFunctions())
 	{
-		;
-		//return false;
-	};
+		GL_DBG_Printf("GLBackend_LoadCommonFunctions(): Failed!\n");
+		return false;
+	}
 
 	if (!gl_first_init)
 	{
-#ifdef DEBUG_TO_FILE
-		if (!gllogstream) 
-		{
-			const char *gllogdir = D_Home();
-#ifdef DEFAULTDIR
-			if (gllogdir)
-				gllogstream = fopen(va("%s/"DEFAULTDIR"/ogllog.txt", gllogdir), "wt");
-			else
-#endif
-				gllogstream = fopen("./ogllog.txt", "wt");
-		}
-#endif
-
 		gl_version = pglGetString(GL_VERSION);
 		gl_renderer = pglGetString(GL_RENDERER);
 		gl_extensions = pglGetString(GL_EXTENSIONS);
+
+		if (gl_version == NULL || gl_renderer == NULL)
+		{
+			// Probably unsupported.
+			CONS_Alert(CONS_ERROR, "Failed to load OpenGL context!\n");
+			return false;
+		}
 
 		GL_DBG_Printf("OpenGL Version: %s\n", gl_version);
 		GL_DBG_Printf("GPU: %s\n", gl_renderer);
@@ -779,20 +872,17 @@ boolean GLBackend_InitContext(void)
 					"- GPU drivers are missing or broken. You may need to update your drivers.");
 		}
 
+		//GLExtension_Init();
 		gl_first_init = true;
 	}
 
 	if (gl_extensions == NULL)
 		GLExtension_Init();
 
-#if 1
-	static int majorGL = 0, minorGL = 0;
-	if (sscanf((const char*)gl_version, "%d.%d", &majorGL, &minorGL)
-		&& (!(majorGL == 1 && minorGL <= 3)))
-		supportMipMap = GL_TRUE;
+	if (sscanf((const char*)gl_version, "%d.%d", &majorGL, &minorGL) && (!(majorGL == 1 && minorGL <= 3)))
+		mipmapSupported = GL_TRUE;
 	else
-		supportMipMap = GL_FALSE;
-#endif
+		mipmapSupported = GL_FALSE;
 
 	return true;
 }
@@ -1013,38 +1103,6 @@ void GLModel_GenerateVBOs(model_t *model)
 	ModelListTail->next = NULL;
 }
 
-void GLModel_ClearVBOs(model_t *model)
-{
-	int i, j;
-
-	if (!model->hasVBOs)
-		return;
-
-	for (i = 0; i < model->numMeshes; i++)
-	{
-		mesh_t *mesh = &model->meshes[i];
-
-		if (mesh->frames)
-		{
-			for (j = 0; j < model->meshes[i].numFrames; j++)
-			{
-				mdlframe_t *frame = &mesh->frames[j];
-				frame->vboID = 0;
-			}
-		}
-		else if (mesh->tinyframes)
-		{
-			for (j = 0; j < model->meshes[i].numFrames; j++)
-			{
-				tinyframe_t *frame = &mesh->tinyframes[j];
-				frame->vboID = 0;
-			}
-		}
-	}
-
-	model->hasVBOs = false;
-}
-
 void GLModel_DeleteVBOs(model_t *model)
 {
 	int i, j;
@@ -1144,34 +1202,18 @@ void GLTexture_Flush(void)
 	textureBufferSize = 0;
 }
 
-
-// Sryder:	This needs to be called whenever the screen changes resolution in order to reset the screen textures to use
-//			a new size
+// -----------------+
+// FlushScreen      : Flush OpenGL screen textures
+//                  :
+//                  : Sryder: This needs to be called whenever the screen changes resolution
+//                    in order to reset the screen textures to use a new size
+// -----------------+
 void GLTexture_FlushScreen(void)
 {
-	if (screentexture)
-		pglDeleteTextures(1, &screentexture);
-	if (startScreenWipe)
-		pglDeleteTextures(1, &startScreenWipe);
-	if (endScreenWipe)
-		pglDeleteTextures(1, &endScreenWipe);
-	if (finalScreenTexture)
-		pglDeleteTextures(1, &finalScreenTexture);
-
-#if 1
-	// bitten note: star removed some of the fucking code i need here for screenTextures[]... THANKS STAR
-	// star note: love you too bitten
 	pglDeleteTextures(NUMSCREENTEXTURES, screenTextures);
 	for (int i = 0; i < NUMSCREENTEXTURES; i++)
 		screenTextures[i] = 0;
-#endif
-
-	screentexture = 0;
-	startScreenWipe = 0;
-	endScreenWipe = 0;
-	finalScreenTexture = 0;
 }
-
 
 // -----------------+
 // SetFilterMode    : Sets texture filtering mode
@@ -1179,16 +1221,16 @@ void GLTexture_FlushScreen(void)
 // -----------------+
 void GLTexture_SetFilterMode(INT32 mode)
 {
-	enabledMipmap = GL_FALSE;
+	mipmapEnabled = GL_FALSE;
 
 	switch (mode)
 	{
 		case HWD_SET_TEXTUREFILTER_TRILINEAR:
 			mag_filter = GL_LINEAR;
-			if (supportMipMap)
+			if (mipmapSupported)
 			{
 				min_filter = GL_LINEAR_MIPMAP_LINEAR;
-				enabledMipmap = GL_TRUE;
+				mipmapEnabled = GL_TRUE;
 			}
 			else
 				min_filter = GL_LINEAR;
@@ -1209,10 +1251,10 @@ void GLTexture_SetFilterMode(INT32 mode)
 			break;
 		case HWD_SET_TEXTUREFILTER_MIXED3:
 			mag_filter = GL_NEAREST;
-			if (supportMipMap)
+			if (mipmapSupported)
 			{
 				min_filter = GL_LINEAR_MIPMAP_LINEAR;
-				enabledMipmap = GL_TRUE;
+				mipmapEnabled = GL_TRUE;
 			}
 			else
 				min_filter = GL_LINEAR;
@@ -1324,6 +1366,13 @@ static boolean CheckRenderbuffer(void)
 	return true;
 }
 
+#if 1
+	// STAR NOTE: needed for framebuffer, we need HWD, therefore we need this thing down here
+	/// \todo fix that
+	#undef _CREATE_DLL_
+	#include "../hw_drv.h"
+#endif
+
 void GLFramebuffer_GenerateAttachments(void)
 {
 	if (!GLExtension_framebuffer_object)
@@ -1432,6 +1481,17 @@ void GLFramebuffer_SetDepth(INT32 depth)
 }
 #endif
 
+void GLBackend_SetPalette(RGBA_t *palette)
+{
+	INT32 i;
+
+	for (i = 0; i < 256; i++)
+	{
+		myPaletteData[i].s = palette[i].s;
+	}
+	GLTexture_Flush();
+}
+
 void GLBackend_ReadRect(INT32 x, INT32 y, INT32 width, INT32 height, INT32 dst_stride, UINT16 *dst_data)
 {
 	INT32 i;
@@ -1476,9 +1536,9 @@ void GLBackend_ReadRect(INT32 x, INT32 y, INT32 width, INT32 height, INT32 dst_s
 			{
 				dst_data[(height-1-i)*width+j] =
 				(UINT16)(
-				                 ((image[(i*width+j)*3]>>3)<<11) |
-				                 ((image[(i*width+j)*3+1]>>2)<<5) |
-				                 ((image[(i*width+j)*3+2]>>3)));
+								 ((image[(i*width+j)*3]>>3)<<11) |
+								 ((image[(i*width+j)*3+1]>>2)<<5) |
+								 ((image[(i*width+j)*3+2]>>3)));
 			}
 		}
 
@@ -1492,14 +1552,19 @@ void GLExtension_Init(void)
 
 	gl_extensions = pglGetString(GL_EXTENSIONS);
 
-	GL_DBG_Printf("Extensions: ");
-	PrintExtensions(gl_extensions);
+	if (gl_extensions == NULL)
+	{
+		CONS_Alert(CONS_ERROR, "OpenGL Extensions not supported!\n");
+		return;
+	}
 
 #ifdef HAVE_GLES2
 	GLExtension_vertex_buffer_object = true;
 	GLExtension_vertex_program = true;
 	GLExtension_fragment_program = true;
 #endif
+
+	PrintExtensions(gl_extensions);
 
 	while (ExtensionList[i].name)
 	{
@@ -1522,7 +1587,7 @@ void GLExtension_Init(void)
 	}
 
 #ifdef GL_SHADERS
-	if (GLExtension_vertex_program && GLExtension_fragment_program && GLBackend_GetFunction("glUseProgram"))
+	if (pglUseProgram && GLExtension_vertex_program && GLExtension_fragment_program)
 		GLExtension_shaders = true;
 #endif
 
@@ -1569,45 +1634,19 @@ boolean GLExtension_Available(const char *extension)
 #endif
 }
 
-static boolean CheckFunctionList(const char **list)
-{
-	char *funcname = NULL;
-
-	INT32 i = 0;
-
-	while (list[i])
-	{
-		size_t len = strlen(list[i]) + 3;
-
-		funcname = realloc(funcname, len);
-		snprintf(funcname, len, "gl%s", list[i++]);
-
-		if (!GLBackend_GetFunction(funcname))
-		{
-			free(funcname);
-			return false;
-		}
-	}
-
-	if (funcname)
-		free(funcname);
-
-	return true;
-}
-
 #define EXTUNSUPPORTED(ext) { \
 	GL_DBG_Printf("%s is unsupported\n", #ext); \
 	ext = false; }
 
 boolean GLExtension_LoadFunctions(void)
 {
+	GL_DBG_Printf("loading extension functinos\n");
+
 	if (GLExtension_multitexture)
 	{
 		const char *list[] =
 		{
-#if 1
 			"TexImage3D",
-#endif
 			"ActiveTexture",
 #ifndef HAVE_GLES2
 			"ClientActiveTexture",
@@ -1615,8 +1654,9 @@ boolean GLExtension_LoadFunctions(void)
 			NULL
 		};
 
-		if (CheckFunctionList(list))
+		if (CheckFunctionList(list) <= 0)
 		{
+			GETOPENGLFUNC(TexImage3D)
 			GETOPENGLFUNC(ActiveTexture)
 #ifndef HAVE_GLES2
 			GETOPENGLFUNC(ClientActiveTexture)
@@ -1637,7 +1677,7 @@ boolean GLExtension_LoadFunctions(void)
 			NULL
 		};
 
-		if (CheckFunctionList(list))
+		if (CheckFunctionList(list) <= 0)
 		{
 			GETOPENGLFUNC(GenBuffers)
 			GETOPENGLFUNC(BindBuffer)
@@ -1666,7 +1706,7 @@ boolean GLExtension_LoadFunctions(void)
 			NULL
 		};
 
-		if (CheckFunctionList(list))
+		if (CheckFunctionList(list) <= 0)
 		{
 			GETOPENGLFUNC(GenFramebuffers);
 			GETOPENGLFUNC(BindFramebuffer);
@@ -1694,35 +1734,49 @@ static void PrintExtensions(const GLubyte *extensions)
 	size_t size = strlen((const char *)extensions) + 1;
 	char *tk, *ext = calloc(size, sizeof(char));
 
+	GL_DBG_Printf("Extensions:");
+
 	memcpy(ext, extensions, size);
 	tk = strtok(ext, " ");
 
-	while (tk)
+	if (tk != NULL)
 	{
-		GL_DBG_Printf("%s", tk);
-		tk = strtok(NULL, " ");
-		if (tk)
-			GL_DBG_Printf(" ", tk);
+		while (tk)
+		{
+			GL_DBG_Printf(" %s", tk);
+			tk = strtok(NULL, " ");
+		}
 	}
+	else
+		GL_DBG_Printf(" None");
 
 	GL_DBG_Printf("\n");
 	free(ext);
 }
 
+static void DebugToGLFile(const char *str)
+{
+	const char *gllogdir = D_Home();
 
-// -----------------+
-// GL_DBG_Printf    : Output debug messages to debug log if DEBUG_TO_FILE is defined,
-//                  : else do nothing
-// Returns          :
-// -----------------+
-
-#ifdef DEBUG_TO_FILE
-FILE *gllogstream;
+	if (!gllogstream)
+	{
+#ifdef DEFAULTDIR
+		if (gllogdir)
+			gllogstream = fopen(va("%s/"DEFAULTDIR"/ogllog.txt", gllogdir), "wt");
+		else
 #endif
+			gllogstream = fopen("./ogllog.txt", "wt");
+	}
 
-//#define DEBUG_TO_CONSOLE
+	fwrite(str, strlen(str), 1, gllogstream);
+}
 
-void GL_DBG_Printf(const char *format, ...)
+// -----------------+
+// GL_DBG_Printf    : Output debug messages to debug log if DEBUG_TO_FILE or DEBUG_TO_CONSOLE
+//					: is defined, else do nothing
+// -----------------+
+
+FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
 {
 #if defined(DEBUG_TO_CONSOLE) || defined(DEBUG_TO_FILE)
 	char str[4096] = "";
@@ -1735,11 +1789,8 @@ void GL_DBG_Printf(const char *format, ...)
 #ifdef DEBUG_TO_CONSOLE
 	I_OutputMsg("%s", str);
 #endif
-
 #ifdef DEBUG_TO_FILE
-	if (!gllogstream)
-		gllogstream = fopen("ogllog.txt", "w");
-	fwrite(str, strlen(str), 1, gllogstream);
+	DebugToGLFile(str);
 #endif
 #else // defined(DEBUG_TO_CONSOLE) || defined(DEBUG_TO_FILE)
 	(void)format;
@@ -1748,8 +1799,6 @@ void GL_DBG_Printf(const char *format, ...)
 
 // -----------------+
 // GL_MSG_Warning   : Raises a warning.
-//                  :
-// Returns          :
 // -----------------+
 
 void GL_MSG_Warning(const char *format, ...)
@@ -1764,19 +1813,15 @@ void GL_MSG_Warning(const char *format, ...)
 	CONS_Alert(CONS_WARNING, "%s", str);
 
 #ifdef DEBUG_TO_FILE
-	if (!gllogstream)
-		gllogstream = fopen("ogllog.txt", "w");
-	fwrite(str, strlen(str), 1, gllogstream);
+	DebugToGLFile(str);
 #endif
 }
 
 // -----------------+
 // GL_MSG_Error     : Raises an error.
-//                  :
-// Returns          :
 // -----------------+
 
-char *lastglerror = NULL;
+static char *lastglerror = NULL;
 
 void GL_MSG_Error(const char *format, ...)
 {
@@ -1789,33 +1834,28 @@ void GL_MSG_Error(const char *format, ...)
 
 	CONS_Alert(CONS_ERROR, "%s", str);
 
-#if 1
 	/// \todo STAR NOTE: improve
 	if (lastglerror)
 		free(lastglerror);
 	lastglerror = strcpy(malloc(strlen(str) + 1), str);
 	VID_DisplayGLError();
-#endif
 
 #ifdef DEBUG_TO_FILE
-	if (!gllogstream)
-		gllogstream = fopen("ogllog.txt", "w");
-	fwrite(str, strlen(str), 1, gllogstream);
+	DebugToGLFile(str);
 #endif
 }
 
 void VID_DisplayGLError(void)
 {
-	//if (menuactive)
+	if (lastglerror)
 	{
-		if (lastglerror)
-		{
-			size_t len = strlen(lastglerror);
-			while (lastglerror[len] == '\n' || lastglerror[len] == '\0')
-				lastglerror[len--] = '\0';
-			M_StartMessage(va(M_GetText("OpenGL failed to load:\n\n%s\n\n%s"), lastglerror, M_GetUserActionString(PRESS_A_KEY_MESSAGE)), NULL, MM_NOTHING);
-		}
-		else
-			M_ShowAnyKeyMessage("OpenGL failed to load.\nCheck the console\nor log file for details.\n\n");
+		size_t len = strlen(lastglerror);
+		while (lastglerror[len] == '\n' || lastglerror[len] == '\0')
+			lastglerror[len--] = '\0';
+		M_StartMessage(va(M_GetText("OpenGL failed to load:\n\n%s\n\n%s"), lastglerror, M_GetUserActionString(PRESS_A_KEY_MESSAGE)), NULL, MM_NOTHING);
+	}
+	else
+	{
+		M_ShowAnyKeyMessage("OpenGL failed to load.\nCheck the console\nor log file for details.\n\n");
 	}
 }
