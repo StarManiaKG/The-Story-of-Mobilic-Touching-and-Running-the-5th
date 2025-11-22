@@ -63,7 +63,6 @@
 #include "../../doomdata.h"
 #include "../../doomtype.h"
 #include "../../doomdef.h"
-#include "../../r_local.h" // For rendertimefrac, used for the leveltime shader uniform
 #include "../../z_zone.h"
 
 #include "../hw_data.h"  // GLMipmap_s

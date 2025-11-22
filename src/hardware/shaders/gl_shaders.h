@@ -181,6 +181,7 @@ typedef void   (R_GL_APIENTRY *PFNglUniform2fv)         		(GLint, GLsizei, const
 typedef void   (R_GL_APIENTRY *PFNglUniform3fv)         		(GLint, GLsizei, const GLfloat*);
 typedef GLint  (R_GL_APIENTRY *PFNglGetUniformLocation) 		(GLuint, const GLchar*);
 typedef void   (R_GL_APIENTRY *PFNglUniformMatrix4fv)   		(GLint, GLsizei, GLboolean, const GLfloat *);
+
 #ifdef HAVE_GLES2
 typedef GLint  (R_GL_APIENTRY *PFNglGetAttribLocation)  		(GLuint, const GLchar*);
 typedef void   (R_GL_APIENTRY *PFNglEnableVertexAttribArray)	(GLuint index);
@@ -209,6 +210,7 @@ extern PFNglUniform2fv pglUniform2fv;
 extern PFNglUniform3fv pglUniform3fv;
 extern PFNglGetUniformLocation pglGetUniformLocation;
 extern PFNglUniformMatrix4fv pglUniformMatrix4fv;
+
 #ifdef HAVE_GLES2
 extern PFNglGetAttribLocation pglGetAttribLocation;
 extern PFNglEnableVertexAttribArray pglEnableVertexAttribArray;

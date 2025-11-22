@@ -13,7 +13,9 @@
 /// \brief OpenGL shaders
 
 #include "gl_shaders.h"
+
 #include "../r_glcommon/r_glcommon.h"
+#include "../../r_local.h" // For rendertimefrac, used for the leveltime shader uniform
 
 #ifdef GL_SHADERS
 
@@ -56,6 +58,7 @@ PFNglUniform2fv pglUniform2fv;
 PFNglUniform3fv pglUniform3fv;
 PFNglGetUniformLocation pglGetUniformLocation;
 PFNglUniformMatrix4fv pglUniformMatrix4fv;
+
 #ifdef HAVE_GLES2
 PFNglGetAttribLocation pglGetAttribLocation;
 PFNglEnableVertexAttribArray pglEnableVertexAttribArray;
@@ -260,7 +263,7 @@ void GLShader_SetInfo(hwdshaderinfo_t info, INT32 value)
 void Shader_Set(int shader_type)
 {
 	gl_shader_t *shader = gl_shaderstate.current;
-	gl_shader_t *next_shader;
+	gl_shader_t *next_shader; // the gl_shader_t we are going to switch to
 
 	if (shader_type == SHADER_NONE)
 	{
@@ -276,34 +279,25 @@ void Shader_Set(int shader_type)
 	}
 #endif
 
-	if ((shader == NULL) || (GLuint)shader_type != gl_shaderstate.type)
-	{
-		next_shader = &gl_shaders[shader_type]; // the gl_shader_t we are going to switch to
+	next_shader = &gl_shaders[shader_type];
 
 #ifdef HAVE_GLES2
-		if (!next_shader->program && alpha_test)
-			next_shader = &gl_shaders[GLBackend_InvertAlphaTestShader(shader_type)];
+	if (!next_shader->program && alpha_test)
+		next_shader = &gl_shaders[GLBackend_InvertAlphaTestShader(shader_type)];
 #endif
 
-		if (!next_shader->program)
-		{
-			// unusable shader, use fallback instead
-			next_shader = &gl_fallback_shader;
-			alpha_test = false;
-		}
-
-		shader = next_shader;
-
-		// update gl_shaderstate if an actual shader switch is needed
-		gl_shaderstate.current = shader;
-		gl_shaderstate.type = shader_type;
-		gl_shaderstate.changed = true;
+	if (!next_shader->program)
+	{
+		next_shader = &gl_fallback_shader; // unusable shader, use fallback instead
+		alpha_test = false;
 	}
 
-	if (gl_shaderstate.program != shader->program)
+	// update gl_shaderstate if an actual shader switch is needed
+	if (gl_shaderstate.current != next_shader)
 	{
-		// update gl_shaderstate if an actual shader switch is needed
-		gl_shaderstate.program = shader->program;
+		gl_shaderstate.current = next_shader;
+		gl_shaderstate.program = next_shader->program;
+		gl_shaderstate.type = shader_type;
 		gl_shaderstate.changed = true;
 	}
 
@@ -316,23 +310,22 @@ void Shader_Set(int shader_type)
 
 void Shader_UnSet(void)
 {
-	if (gl_shadersenabled) // don't repeatedly call glUseProgram if not needed
-	{
-		gl_shaderstate.current =  NULL;
-		gl_shaderstate.type = 0;
-		gl_shaderstate.program = 0;
+	gl_shaderstate.current =  NULL;
+	gl_shaderstate.type = 0;
+	gl_shaderstate.program = 0;
 
 #ifdef HAVE_GLES2
-		Shader_Set(SHADER_NONE); // star note: normal
-		//Shader_Set(SHADER_ALPHA_TEST); // bitten temp
+	if (gl_shadersenabled)
+	{
+		Shader_Set(SHADER_NONE);
 		Shader_SetUniforms(NULL, NULL, NULL, NULL);
+	}
 #endif
 
-		if (GLExtension_shaders)
-			pglUseProgram(0);
-	}
-	//gl_shadersenabled = false;
-	gl_shadersenabled = true;
+	if (gl_shadersenabled && GLExtension_shaders)
+		pglUseProgram(0);
+
+	gl_shadersenabled = false;
 }
 
 void Shader_SetIfChanged(gl_shader_t *shader)
@@ -723,7 +716,10 @@ void GLShader_SetInfo(hwdshaderinfo_t info, INT32 value)
 	(void)value;
 }
 
-void Shader_UnSet(void) { }
+void Shader_UnSet(void)
+{
+	gl_shadersenabled = false;
+}
 
 void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade)
 {
