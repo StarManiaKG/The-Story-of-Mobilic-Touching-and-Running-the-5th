@@ -1,20 +1,18 @@
 // SONIC ROBO BLAST 2
 //-----------------------------------------------------------------------------
-// Copyright (C) 2023 by Sonic Team Junior.
 // Copyright (C) 2023 by SRB2 Mobile Project.
-// Copyright (C) 2025 by Bitten2Up.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
-/// \file  apk_m_textreader.c
+/// \file  m_textreader.c
 /// \brief Text reader
 
-#include "apk_m_textreader.h"
+#include "m_textreader.h"
 
-#include "../doomdef.h"
-#include "../z_zone.h"
+#include "doomdef.h"
+#include "z_zone.h"
 
 textreader_t *TextReader_New(char *text, size_t size)
 {
