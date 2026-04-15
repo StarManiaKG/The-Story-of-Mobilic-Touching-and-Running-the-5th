@@ -290,8 +290,8 @@ void HWR_ReloadModels(void)
 	HWR_ReadModels();
 #endif
 
-	//for (i = 0; i < md2_numplayermodels; i++)
-	for (i = 0; i < numskins; i++)
+//	for (i = 0; i < numskins; i++)
+	for (i = 0; i < md2_numplayermodels; i++)
 	{
 		if (md2_playermodels[i].model)
 			LoadModelSprite2(md2_playermodels[i].model);
