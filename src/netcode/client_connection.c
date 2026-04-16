@@ -1250,7 +1250,11 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 #ifdef TOUCHINPUTS
 #if 1
 		// STAR NOTE: weeeeee
-		NetUpdate();
+//		NetUpdate();
+        // romoney5: that actually kills addon downloading;
+        // netupdate may send keepalive packets,
+        // which the server doesn't recognize and just kicks the node out
+        // funnily enough netupdate is not called during addon downloading..
 #else
 		TS_UpdateNavigation(*oldtic);
 #endif
