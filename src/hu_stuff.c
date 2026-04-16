@@ -58,6 +58,7 @@
 #include "ts_main.h"
 #endif
 #include "android/apk_main.h"
+#include "xtra/xthu_stuff.h"
 
 // coords are scaled
 #define HU_INPUTX 0
@@ -1213,7 +1214,6 @@ boolean HU_Responder(event_t *ev)
 			else
 				c_input++;
 		}
-#ifdef VIRTUAL_KEYBOARD
 		else if (!I_KeyboardOnScreen()
 			&& ((c >= FONTSTART && c <= FONTEND && hu_font.chars[c-FONTSTART])
 			|| c == ' ')) // Allow spaces, of course
@@ -1226,7 +1226,6 @@ boolean HU_Responder(event_t *ev)
 			w_chat[c_input] = c;
 			c_input++;
 		}
-#endif
 		else if (c == KEY_BACKSPACE)
 		{
 			if (CHAT_MUTE || c_input <= 0)
@@ -1524,11 +1523,7 @@ static void HU_DrawChat(void)
 	const char *talk = ntalk;
 
 	// SRB2Android
-	if (mobilechat
-#ifdef VIRTUAL_KEYBOARD
-		|| I_KeyboardOnScreen()
-#endif
-	)
+	if (mobilechat || I_KeyboardOnScreen())
 		y -= charheight;
 	else
 		y -= (typelines*charheight);

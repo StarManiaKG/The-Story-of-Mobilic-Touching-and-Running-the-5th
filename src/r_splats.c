@@ -22,16 +22,8 @@
 
 struct rastery_s *prastertab; // for ASM code
 
-static struct rastery_s *rastertab;
+static struct rastery_s rastertab[MAXVIDHEIGHT];
 static void prepare_rastertab(void);
-
-static boolean *cliptable;
-
-void R_AllocFloorSpriteTables(void)
-{
-	cliptable = Z_Realloc(cliptable, sizeof(*cliptable) * (viewwidth + 1), PU_STATIC, NULL);
-	rastertab = Z_Realloc(rastertab, sizeof(*rastertab) * viewheight, PU_STATIC, NULL);
-}
 
 // ==========================================================================
 //                                                               FLOOR SPLATS
@@ -61,7 +53,7 @@ static void rasterize_segment_tex(INT32 x1, INT32 y1, INT32 x2, INT32 y2, INT32 
 
 			if (dir == 0)
 			{
-				for (; count > 0; count--)
+				for (;;)
 				{
 					rastertab[y1].maxx = xs;
 					rastertab[y1].tx2 = xe;
@@ -70,11 +62,13 @@ static void rasterize_segment_tex(INT32 x1, INT32 y1, INT32 x2, INT32 y2, INT32 
 					xs += dx0;
 					xe += dx1;
 					y1++;
+
+					if (count-- < 1) break;
 				}
 			}
 			else
 			{
-				for (; count > 0; count--)
+				for (;;)
 				{
 					rastertab[y1].maxx = xs;
 					rastertab[y1].tx2 = tc;
@@ -83,6 +77,8 @@ static void rasterize_segment_tex(INT32 x1, INT32 y1, INT32 x2, INT32 y2, INT32 
 					xs += dx0;
 					xe += dx1;
 					y1++;
+
+					if (count-- < 1) break;
 				}
 			}
 		}
@@ -99,7 +95,7 @@ static void rasterize_segment_tex(INT32 x1, INT32 y1, INT32 x2, INT32 y2, INT32 
 
 			if (dir == 0)
 			{
-				for (; count > 0; count--)
+				for (;;)
 				{
 					rastertab[y2].minx = xs;
 					rastertab[y2].tx1 = xe;
@@ -108,11 +104,13 @@ static void rasterize_segment_tex(INT32 x1, INT32 y1, INT32 x2, INT32 y2, INT32 
 					xs += dx0;
 					xe += dx1;
 					y2++;
+
+					if (count-- < 1) break;
 				}
 			}
 			else
 			{
-				for (; count > 0; count--)
+				for (;;)
 				{
 					rastertab[y2].minx = xs;
 					rastertab[y2].tx1 = tc;
@@ -121,6 +119,8 @@ static void rasterize_segment_tex(INT32 x1, INT32 y1, INT32 x2, INT32 y2, INT32 
 					xs += dx0;
 					xe += dx1;
 					y2++;
+
+					if (count-- < 1) break;
 				}
 			}
 		}
@@ -485,6 +485,8 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
 
 	for (y = miny; y <= maxy; y++)
 	{
+		boolean cliptab[MAXVIDWIDTH+1];
+
 		x1 = rastertab[y].minx>>FRACBITS;
 		x2 = rastertab[y].maxx>>FRACBITS;
 
@@ -507,10 +509,10 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
 			continue;
 
 		for (i = x1; i <= x2; i++)
-			cliptable[i] = (y >= mfloorclip[i] || y <= mceilingclip[i]);
+			cliptab[i] = (y >= mfloorclip[i] || y <= mceilingclip[i]);
 
 		// clip left
-		while (cliptable[x1])
+		while (cliptab[x1])
 		{
 			x1++;
 			if (x1 >= viewwidth)
@@ -522,7 +524,7 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
 
 		while (i > x1)
 		{
-			if (cliptable[i])
+			if (cliptab[i])
 				x2 = i-1;
 			i--;
 			if (i < 0)

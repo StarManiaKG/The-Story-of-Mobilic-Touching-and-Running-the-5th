@@ -415,8 +415,6 @@ void I_InitTouchScreen(void);
 */
 void I_TouchScreenAvailable(void);
 
-#ifdef VIRTUAL_KEYBOARD
-
 /**	\brief show the on-screen keyboard
 */
 void I_ShowVirtualKeyboard(char *buffer, size_t length);
@@ -432,8 +430,6 @@ boolean I_KeyboardOnScreen(void);
 /**	\brief close the on-screen keyboard
 */
 void I_CloseScreenKeyboard(void);
-
-#endif
 
 // STORAGE //
 

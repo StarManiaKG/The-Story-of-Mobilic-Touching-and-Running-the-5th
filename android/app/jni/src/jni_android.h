@@ -33,6 +33,7 @@ typedef enum JNI_DeviceInfo_e
 	JNIDeviceInfo_Device,
 	JNIDeviceInfo_Manufacturer,
 	JNIDeviceInfo_Model,
+
 	JNIDeviceInfo_Size
 } JNI_DeviceInfo_t;
 
