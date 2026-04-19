@@ -19,7 +19,6 @@ add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
 	ts_main.c
 	ts_draw.c
 	ts_custom.c
-	w_handle.c
 	am_map.c
 	command.c
 	console.c
@@ -39,7 +38,6 @@ add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
 	m_misc.c
 	m_perfstats.c
 	m_random.c
-	m_textreader.c
 	m_tokenizer.c
 	m_queue.c
 	m_vector.c
@@ -157,10 +155,6 @@ set(SRB2_CONFIG_DEV_BUILD OFF CACHE BOOL
 add_subdirectory(blua)
 add_subdirectory(netcode)
 
-# Android
-add_subdirectory(android)
-add_subdirectory(xtra)
-
 # OS macros
 if (UNIX)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DUNIXCOMMON)
@@ -215,14 +209,6 @@ if("${SRB2_CONFIG_HWRENDER}")
 		else()
 			message(WARNING "You have specified static opengl but opengl was not found. Not setting HWRENDER.")
 		endif()
-	endif()
-
-	if(SRB2_CONFIG_HAVE_GLES2)
-		message(STATUS "HWRender using GLES2 backend.")
-	elseif(SRB2_CONFIG_HAVE_GLES)
-		message(STATUS "HWRender using GLES backend.")
-	else()
-		message(STATUS "HWRender using OpenGL backend.")
 	endif()
 endif()
 
@@ -413,8 +399,6 @@ if(SRB2_CONFIG_PACKETDROP)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DPACKETDROP)
 endif()
 if(SRB2_CONFIG_EXECINFO)
-	# set compile options
-	target_compile_options(SRB2SDL2 PRIVATE -g)
 else()
 	target_compile_definitions(SRB2SDL2 PRIVATE -DNOEXECINFO)
 	message(STATUS "You have disabled stack trace dump support")
@@ -483,13 +467,8 @@ else()
 endif()
 
 if(TARGET miniupnpc::miniupnpc)
-	if("${VCPKG_TARGET_TRIPLET}" MATCHES "-mingw-static$")
-		target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_MINIUPNPC -DMINIUPNP_STATICLIB)
-		target_link_libraries(SRB2SDL2 PRIVATE miniupnpc::miniupnpc -liphlpapi)
-	else()
-		target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_MINIUPNPC)
-		target_link_libraries(SRB2SDL2 PRIVATE miniupnpc::miniupnpc)
-	endif()
+	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_MINIUPNPC)
+	target_link_libraries(SRB2SDL2 PRIVATE miniupnpc::miniupnpc)
 	message(STATUS "miniupnpc Found")
 else()
 	message(STATUS "No miniupnpc Found")
@@ -497,18 +476,18 @@ endif()
 
 # strip debug symbols into separate file when using gcc.
 # to be consistent with Makefile, don't generate for OS X.
-if((CMAKE_COMPILER_IS_GNUCC) AND NOT ("${CMAKE_SYSTEM_NAME}" MATCHES Darwin) AND (${SRB2_CONFIG_DEBUGSYMBOLS_SEPARATE}))
-	if(${CMAKE_BUILD_TYPE} MATCHES Debug)
-		set(OBJCOPY_ONLY_KEEP_DEBUG "--only-keep-debug")
+if((CMAKE_COMPILER_IS_GNUCC) AND NOT ("${CMAKE_SYSTEM_NAME}" MATCHES Darwin))
+	if((${CMAKE_BUILD_TYPE} MATCHES Debug) OR (${CMAKE_BUILD_TYPE} MATCHES RelWithDebInfo))
+		if(${CMAKE_BUILD_TYPE} MATCHES Debug)
+			set(OBJCOPY_ONLY_KEEP_DEBUG "--only-keep-debug")
+		endif()
+		message(STATUS "Will make separate debug symbols in *.debug")
+		add_custom_command(TARGET SRB2SDL2 POST_BUILD
+			COMMAND ${OBJCOPY} ${OBJCOPY_ONLY_KEEP_DEBUG} $<TARGET_FILE:SRB2SDL2> $<TARGET_FILE:SRB2SDL2>.debug
+			COMMAND ${OBJCOPY} --strip-debug $<TARGET_FILE:SRB2SDL2>
+			COMMAND ${OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE:SRB2SDL2>.debug $<TARGET_FILE:SRB2SDL2>
+		)
 	endif()
-	message(STATUS "Will make separate debug symbols in *.debug")
-	add_custom_command(TARGET SRB2SDL2 POST_BUILD
-		COMMAND ${OBJCOPY} ${OBJCOPY_ONLY_KEEP_DEBUG} $<TARGET_FILE:SRB2SDL2> $<TARGET_FILE:SRB2SDL2>.debug
-		COMMAND ${OBJCOPY} --strip-debug $<TARGET_FILE:SRB2SDL2>
-		COMMAND ${OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE:SRB2SDL2>.debug $<TARGET_FILE:SRB2SDL2>
-	)
-else()
-	message(STATUS "Debug symbols will be included in the main build")
 endif()
 
 # copy DLLs to bin/ directory if building internal shared on windows
@@ -542,3 +521,9 @@ endif()
 if(SRB2_CONFIG_ENABLE_CLANG_TIDY_CXX)
 	target_set_default_clang_tidy(SRB2SDL2 CXX "-*,clang-analyzer-*,modernize-*")
 endif()
+
+# Android
+if (__ANDROID__)
+	add_subdirectory(android)
+endif()
+add_subdirectory(xtra)

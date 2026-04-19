@@ -10,12 +10,12 @@
 /// \file  ndk_crash_handler.c
 /// \brief Android crash handler
 
+#include "ndk_crash_handler.h"
+#include "jni_android.h"
+
 #include <stdio.h>
 #include <unwind.h>
 #include <dlfcn.h>
-
-#include "ndk_crash_handler.h"
-#include "jni_android.h"
 
 typedef struct BacktraceState
 {
@@ -46,25 +46,26 @@ size_t NDKCrashHandler_CaptureBacktrace(void **buffer, size_t max)
 
 static void NDKCrashHandler_PrintToLog(FILE *log_file, const char *fmt, ...)
 {
-	static char *txt;
-	va_list argptr;
+	static char txt[8192] = "";
 
 	if (!log_file)
 		return;
-	if (!txt)
-		txt = malloc(8192);
 
+#if 0
+	// STAR NOTE: normal
+	va_list argptr;
 	va_start(argptr, fmt);
 	Android_vsnprintf(txt, 8192, fmt, argptr);
-	vfprintf(log_file, fmt, argptr);
 	va_end(argptr);
+#else
+	strlcat(txt, fmt, 8192);
+#endif
 
-	//fwrite(txt, strlen(txt), 1, log_file);
+	fwrite(txt, strlen(txt), 1, log_file);
 	CON_LogMessage(txt);
-	free(txt);
 }
 
-static void NDKCrashHandler_WriteBacktrace(FILE *stacktrace_file)
+static void NDKCrashHandler_StackTrace(FILE *stacktrace_file)
 {
 	const int max = 4096;
 	void *buffer[max];
@@ -72,12 +73,9 @@ static void NDKCrashHandler_WriteBacktrace(FILE *stacktrace_file)
 	int i;
 
 	if (!count)
-	{
-		NDKCrashHandler_PrintToLog(stacktrace_file, "No backtrace could be written!:\n");
 		return;
-	}
 
-	NDKCrashHandler_PrintToLog(stacktrace_file, "Backtrace:\n");
+	NDKCrashHandler_PrintToLog(stacktrace_file, "Stack trace:\n");
 	for (i = 0; i < count; i++)
 	{
 		Dl_info info;
@@ -93,10 +91,11 @@ static void NDKCrashHandler_WriteBacktrace(FILE *stacktrace_file)
 
 void NDKCrashHandler_ReportSignal(const char *sigmsg, int signum)
 {
-	const char *mode = "a+"; // wt+ // rw+
-	const char *filename = va("%s" PATHSEP "%s", I_SharedStorageLocation(), "crash-log.txt");
-	FILE *crash_log = fopen(filename, mode); // open crash-log.txt
+	static FILE *crash_log = NULL;
 	INT32 i;
+
+	// open crash-log.txt
+	crash_log = fopen(va("%s/crash-log.txt", I_SharedStorageLocation()), "wt+");
 
 #if 0
 	// Get the current time as a string.
@@ -150,7 +149,7 @@ void NDKCrashHandler_ReportSignal(const char *sigmsg, int signum)
 	}
 
 	NDKCrashHandler_PrintToLog(crash_log, "\n");
-	NDKCrashHandler_WriteBacktrace(crash_log);
+	NDKCrashHandler_StackTrace(crash_log);
 
 	if (crash_log)
 	{

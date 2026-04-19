@@ -19,6 +19,8 @@
 
 #include "android/apk_main.h" // android_data::prompt_blockcontrols
 
+#include "xtra/xthu_stuff.h" // extra hud stuff
+
 #include "g_game.h" // players[MAXPLAYERS], promptactive
 
 #include "m_menu.h" // M_IsCustomizingTouchControls

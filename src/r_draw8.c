@@ -25,9 +25,9 @@
 void R_DrawColumn_8(void)
 {
 	INT32 count;
-	UINT8 *restrict dest;
-	intptr_t frac;
-	intptr_t fracstep;
+	register UINT8 *dest;
+	register fixed_t frac;
+	fixed_t fracstep;
 
 	count = dc_yh - dc_yl;
 
@@ -51,24 +51,10 @@ void R_DrawColumn_8(void)
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
 	{
-		const UINT8 *restrict source = dc_source;
-		const lighttable_t *restrict colormap = dc_colormap;
-		intptr_t heightmask = dc_texheight-1;
-		if (heightmask == -1)
-		{
-			if (frac < 0)
-				// adjust in case we underread
-				frac += FRACUNIT;
-
-			// texture has no height, so just go
-			while (--count >= 0)
-			{
-				*dest = colormap[source[frac>>FRACBITS]];
-				dest += vid.width;
-				frac += fracstep;
-			}
-		}
-		else if (dc_texheight & heightmask)   // not a power of 2 -- killough
+		register const UINT8 *source = dc_source;
+		register const lighttable_t *colormap = dc_colormap;
+		register INT32 heightmask = dc_texheight-1;
+		if (dc_texheight & heightmask)   // not a power of 2 -- killough
 		{
 			heightmask++;
 			heightmask <<= FRACBITS;
@@ -87,12 +73,10 @@ void R_DrawColumn_8(void)
 				*dest = colormap[source[frac>>FRACBITS]];
 				dest += vid.width;
 
-#if __SIZEOF_POINTER__ < 8 // 64-bit systems have large enough numbers for this to be a non-issue
 				// Avoid overflow.
 				if (fracstep > 0x7FFFFFFF - frac)
 					frac += fracstep - heightmask;
 				else
-#endif
 					frac += fracstep;
 
 				while (frac >= heightmask)
@@ -101,52 +85,17 @@ void R_DrawColumn_8(void)
 		}
 		else
 		{
-			switch (count % 8)
+			while ((count -= 2) >= 0) // texture height is a power of 2
 			{
-				// switch abuse for performance :D
-				while ((count -= 8) > 0)
-				{
-				case 0:
-					*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-					dest += vid.width;
-					frac += fracstep;
-					// FALLTHRU
-				case 7:
-					*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-					dest += vid.width;
-					frac += fracstep;
-					// FALLTHRU
-				case 6:
-					*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-					dest += vid.width;
-					frac += fracstep;
-					// FALLTHRU
-				case 5:
-					*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-					dest += vid.width;
-					frac += fracstep;
-					// FALLTHRU
-				case 4:
-					*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-					dest += vid.width;
-					frac += fracstep;
-					// FALLTHRU
-				case 3:
-					*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-					dest += vid.width;
-					frac += fracstep;
-					// FALLTHRU
-				case 2:
-					*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-					dest += vid.width;
-					frac += fracstep;
-					// FALLTHRU
-				case 1:
-					*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-					dest += vid.width;
-					frac += fracstep;
-				}
+				*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
+				dest += vid.width;
+				frac += fracstep;
+				*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
+				dest += vid.width;
+				frac += fracstep;
 			}
+			if (count & 1)
+				*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
 		}
 	}
 }
@@ -157,9 +106,9 @@ void R_DrawColumn_8(void)
 void R_DrawColumnClamped_8(void)
 {
 	INT32 count;
-	UINT8 *restrict dest;
-	intptr_t frac;
-	intptr_t fracstep;
+	UINT8 *dest;
+	fixed_t frac;
+	fixed_t fracstep;
 
 	count = dc_yh - dc_yl;
 
@@ -183,27 +132,11 @@ void R_DrawColumnClamped_8(void)
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
 	{
-		const UINT8 *restrict source = dc_source;
-		const lighttable_t *restrict colormap = dc_colormap;
-		intptr_t heightmask = dc_texheight-1;
-		intptr_t idx;
-		if (heightmask == -1)
-		{
-			if (frac < 0)
-				// adjust in case we underread
-				frac += FRACUNIT;
-
-			// texture has no height, so just go
-			while (--count >= 0)
-			{
-				idx = frac>>FRACBITS;
-				if (idx >= 0 && idx < dc_postlength)
-					*dest = colormap[source[idx]];
-				dest += vid.width;
-				frac += fracstep;
-			}
-		}
-		else if (dc_texheight & heightmask)   // not a power of 2 -- killough
+		const UINT8 *source = dc_source;
+		const lighttable_t *colormap = dc_colormap;
+		INT32 heightmask = dc_texheight-1;
+		INT32 idx;
+		if (dc_texheight & heightmask)   // not a power of 2 -- killough
 		{
 			heightmask++;
 			heightmask <<= FRACBITS;
@@ -225,11 +158,9 @@ void R_DrawColumnClamped_8(void)
 				dest += vid.width;
 
 				// Avoid overflow.
-#if __SIZEOF_POINTER__ < 8
 				if (fracstep > 0x7FFFFFFF - frac)
 					frac += fracstep - heightmask;
 				else
-#endif
 					frac += fracstep;
 
 				while (frac >= heightmask)
@@ -264,9 +195,9 @@ void R_DrawColumnClamped_8(void)
 void R_Draw2sMultiPatchColumn_8(void)
 {
 	INT32 count;
-	UINT8 *restrict dest;
-	intptr_t frac;
-	intptr_t fracstep;
+	register UINT8 *dest;
+	register fixed_t frac;
+	fixed_t fracstep;
 
 	count = dc_yh - dc_yl;
 
@@ -290,27 +221,11 @@ void R_Draw2sMultiPatchColumn_8(void)
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
 	{
-		const UINT8 *restrict source = dc_source;
-		const lighttable_t *restrict colormap = dc_colormap;
-		intptr_t heightmask = dc_texheight-1;
-		UINT8 val;
-		if (heightmask == -1)
-		{
-			if (frac < 0)
-				// adjust in case we underread
-				frac += FRACUNIT;
-
-			// texture has no height, so just go
-			while (--count >= 0)
-			{
-				val = source[frac>>FRACBITS];
-				if (val != TRANSPARENTPIXEL)
-					*dest = colormap[val];
-				dest += vid.width;
-				frac += fracstep;
-			}
-		}
-		else if (dc_texheight & heightmask)   // not a power of 2 -- killough
+		register const UINT8 *source = dc_source;
+		register const lighttable_t *colormap = dc_colormap;
+		register INT32 heightmask = dc_texheight-1;
+		register UINT8 val;
+		if (dc_texheight & heightmask)   // not a power of 2 -- killough
 		{
 			heightmask++;
 			heightmask <<= FRACBITS;
@@ -334,11 +249,9 @@ void R_Draw2sMultiPatchColumn_8(void)
 				dest += vid.width;
 
 				// Avoid overflow.
-#if __SIZEOF_POINTER__ < 8
 				if (fracstep > 0x7FFFFFFF - frac)
 					frac += fracstep - heightmask;
 				else
-#endif
 					frac += fracstep;
 
 				while (frac >= heightmask)
@@ -404,23 +317,7 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 		register const lighttable_t *colormap = dc_colormap;
 		register INT32 heightmask = dc_texheight-1;
 		register UINT8 val;
-		if (heightmask == -1)
-		{
-			if (frac < 0)
-				// adjust in case we underread
-				frac += FRACUNIT;
-
-			// texture has no height, so just go
-			while (--count >= 0)
-			{
-				val = source[frac>>FRACBITS];
-				if (val != TRANSPARENTPIXEL)
-					*dest = *(transmap + (colormap[val]<<8) + (*dest));
-				dest += vid.width;
-				frac += fracstep;
-			}
-		}
-		else if (dc_texheight & heightmask)   // not a power of 2 -- killough
+		if (dc_texheight & heightmask)   // not a power of 2 -- killough
 		{
 			heightmask++;
 			heightmask <<= FRACBITS;
@@ -549,21 +446,7 @@ void R_DrawTranslucentColumn_8(void)
 		register const UINT8 *transmap = dc_transmap;
 		register const lighttable_t *colormap = dc_colormap;
 		register INT32 heightmask = dc_texheight - 1;
-		if (heightmask == -1)
-		{
-			if (frac < 0)
-				// adjust in case we underread
-				frac += FRACUNIT;
-
-			// texture has no height, so just go
-			while (--count >= 0)
-			{
-				*dest = *(transmap + (colormap[source[frac>>FRACBITS]]<<8) + (*dest));
-				dest += vid.width;
-				frac += fracstep;
-			}
-		}
-		else if (dc_texheight & heightmask)
+		if (dc_texheight & heightmask)
 		{
 			heightmask++;
 			heightmask <<= FRACBITS;
@@ -637,23 +520,7 @@ void R_DrawTranslucentColumnClamped_8(void)
 		const lighttable_t *colormap = dc_colormap;
 		INT32 heightmask = dc_texheight - 1;
 		INT32 idx;
-		if (heightmask == -1)
-		{
-			if (frac < 0)
-				// adjust in case we underread
-				frac += FRACUNIT;
-
-			// texture has no height, so just go
-			while (--count >= 0)
-			{
-				idx = frac>>FRACBITS;
-				if (idx >= 0 && idx < dc_postlength)
-					*dest = *(transmap + (colormap[source[idx]]<<8) + (*dest));
-				dest += vid.width;
-				frac += fracstep;
-			}
-		}
-		else if (dc_texheight & heightmask)
+		if (dc_texheight & heightmask)
 		{
 			heightmask++;
 			heightmask <<= FRACBITS;
@@ -762,21 +629,7 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 	// This is as fast as it gets.
 	{
 		register INT32 heightmask = dc_texheight - 1;
-		if (heightmask == -1)
-		{
-			if (frac < 0)
-				// adjust in case we underread
-				frac += FRACUNIT;
-
-			// texture has no height, so just go
-			while (--count >= 0)
-			{
-				*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[frac>>FRACBITS]]]<<8) + (*dest));
-				dest += vid.width;
-				frac += fracstep;
-			}
-		}
-		else if (dc_texheight & heightmask)
+		if (dc_texheight & heightmask)
 		{
 			heightmask++;
 			heightmask <<= FRACBITS;
@@ -845,10 +698,6 @@ void R_DrawTranslatedColumn_8(void)
 	fracstep = dc_iscale;
 	frac = dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep);
 
-	if (frac < 0)
-		// adjust in case we underread
-		frac += FRACUNIT;
-
 	// Here we do an additional index re-mapping.
 	do
 	{
@@ -877,16 +726,16 @@ void R_DrawTranslatedColumn_8(void)
 */
 void R_DrawSpan_8 (void)
 {
-	uintptr_t xposition;
-	uintptr_t yposition;
-	uintptr_t xstep, ystep;
+	fixed_t xposition;
+	fixed_t yposition;
+	fixed_t xstep, ystep;
 
-	UINT8 *restrict source;
-	UINT8 *restrict colormap;
-	UINT8 *restrict dest;
-	const UINT8 *restrict deststop = screens[0] + vid.rowbytes * vid.height;
+	UINT8 *source;
+	UINT8 *colormap;
+	UINT8 *dest;
+	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
 
-	intptr_t count = (ds_x2 - ds_x1 + 1);
+	size_t count = (ds_x2 - ds_x1 + 1);
 
 	xposition = ds_xfrac; yposition = ds_yfrac;
 	xstep = ds_xstep; ystep = ds_ystep;
@@ -948,7 +797,6 @@ void R_DrawSpan_8 (void)
 		dest += 8;
 		count -= 8;
 	}
-
 	while (count-- && dest <= deststop)
 	{
 		*dest++ = colormap[source[(((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift)]];
@@ -964,7 +812,7 @@ void R_DrawTiltedSpan_8(void)
 {
 	// x1, x2 = ds_x1, ds_x2
 	int width = ds_x2 - ds_x1;
-	float iz, uz, vz;
+	double iz, uz, vz;
 	UINT32 u, v;
 	int i;
 
@@ -972,9 +820,9 @@ void R_DrawTiltedSpan_8(void)
 	UINT8 *colormap;
 	UINT8 *dest;
 
-	float startz, startu, startv;
-	float izstep, uzstep, vzstep;
-	float endz, endu, endv;
+	double startz, startu, startv;
+	double izstep, uzstep, vzstep;
+	double endz, endu, endv;
 	UINT32 stepu, stepv;
 
 	iz = ds_sz.z + ds_sz.y*(centery-ds_y) + ds_sz.x*(ds_x1-centerx);
@@ -985,6 +833,7 @@ void R_DrawTiltedSpan_8(void)
 
 	dest = &topleft[ds_y*vid.width + ds_x1];
 	source = ds_source;
+	//colormap = ds_colormap;
 
 #if 0	// The "perfect" reference version of this routine. Pretty slow.
 		// Use it only to see how things are supposed to look.
@@ -1004,7 +853,6 @@ void R_DrawTiltedSpan_8(void)
 		vz += ds_sv.x;
 	} while (--width >= 0);
 #else
-
 	startz = 1.f/iz;
 	startu = uz*startz;
 	startv = vz*startz;
@@ -1052,7 +900,7 @@ void R_DrawTiltedSpan_8(void)
 		}
 		else
 		{
-			float left = width;
+			double left = width;
 			iz += ds_sz.x * left;
 			uz += ds_su.x * left;
 			vz += ds_sv.x * left;
@@ -1094,9 +942,9 @@ void R_DrawTiltedTranslucentSpan_8(void)
 	UINT8 *colormap;
 	UINT8 *dest;
 
-	float startz, startu, startv;
-	float izstep, uzstep, vzstep;
-	float endz, endu, endv;
+	double startz, startu, startv;
+	double izstep, uzstep, vzstep;
+	double endz, endu, endv;
 	UINT32 stepu, stepv;
 
 	iz = ds_sz.z + ds_sz.y*(centery-ds_y) + ds_sz.x*(ds_x1-centerx);
@@ -1107,6 +955,7 @@ void R_DrawTiltedTranslucentSpan_8(void)
 
 	dest = &topleft[ds_y*vid.width + ds_x1];
 	source = ds_source;
+	//colormap = ds_colormap;
 
 #if 0	// The "perfect" reference version of this routine. Pretty slow.
 		// Use it only to see how things are supposed to look.
@@ -1172,7 +1021,7 @@ void R_DrawTiltedTranslucentSpan_8(void)
 		}
 		else
 		{
-			float left = width;
+			double left = width;
 			iz += ds_sz.x * left;
 			uz += ds_su.x * left;
 			vz += ds_sv.x * left;
@@ -1206,7 +1055,7 @@ void R_DrawTiltedWaterSpan_8(void)
 {
 	// x1, x2 = ds_x1, ds_x2
 	int width = ds_x2 - ds_x1;
-	float iz, uz, vz;
+	double iz, uz, vz;
 	UINT32 u, v;
 	int i;
 
@@ -1215,9 +1064,9 @@ void R_DrawTiltedWaterSpan_8(void)
 	UINT8 *dest;
 	UINT8 *dsrc;
 
-	float startz, startu, startv;
-	float izstep, uzstep, vzstep;
-	float endz, endu, endv;
+	double startz, startu, startv;
+	double izstep, uzstep, vzstep;
+	double endz, endu, endv;
 	UINT32 stepu, stepv;
 
 	iz = ds_sz.z + ds_sz.y*(centery-ds_y) + ds_sz.x*(ds_x1-centerx);
@@ -1229,6 +1078,7 @@ void R_DrawTiltedWaterSpan_8(void)
 	dest = &topleft[ds_y*vid.width + ds_x1];
 	dsrc = screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
 	source = ds_source;
+	//colormap = ds_colormap;
 
 #if 0	// The "perfect" reference version of this routine. Pretty slow.
 		// Use it only to see how things are supposed to look.
@@ -1294,7 +1144,7 @@ void R_DrawTiltedWaterSpan_8(void)
 		}
 		else
 		{
-			float left = width;
+			double left = width;
 			iz += ds_sz.x * left;
 			uz += ds_su.x * left;
 			vz += ds_sv.x * left;
@@ -1325,7 +1175,7 @@ void R_DrawTiltedSplat_8(void)
 {
 	// x1, x2 = ds_x1, ds_x2
 	int width = ds_x2 - ds_x1;
-	float iz, uz, vz;
+	double iz, uz, vz;
 	UINT32 u, v;
 	int i;
 
@@ -1335,9 +1185,9 @@ void R_DrawTiltedSplat_8(void)
 
 	UINT8 val;
 
-	float startz, startu, startv;
-	float izstep, uzstep, vzstep;
-	float endz, endu, endv;
+	double startz, startu, startv;
+	double izstep, uzstep, vzstep;
+	double endz, endu, endv;
 	UINT32 stepu, stepv;
 
 	iz = ds_sz.z + ds_sz.y*(centery-ds_y) + ds_sz.x*(ds_x1-centerx);
@@ -1348,6 +1198,7 @@ void R_DrawTiltedSplat_8(void)
 
 	dest = &topleft[ds_y*vid.width + ds_x1];
 	source = ds_source;
+	//colormap = ds_colormap;
 
 #if 0	// The "perfect" reference version of this routine. Pretty slow.
 		// Use it only to see how things are supposed to look.
@@ -1421,7 +1272,7 @@ void R_DrawTiltedSplat_8(void)
 		}
 		else
 		{
-			float left = width;
+			double left = width;
 			iz += ds_sz.x * left;
 			uz += ds_su.x * left;
 			vz += ds_sv.x * left;
