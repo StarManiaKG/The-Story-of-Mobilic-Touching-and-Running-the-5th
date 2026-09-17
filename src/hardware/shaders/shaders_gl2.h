@@ -1,7 +1,8 @@
 // SONIC ROBO BLAST 2
 //-----------------------------------------------------------------------------
-// Copyright (C) 2020-2021 by Jaime Ita Passos.
 // Copyright (C) 1998-2020 by Sonic Team Junior.
+// Copyright (C) 2020-2021 by Jaime Ita Passos.
+// Copyright (C) 2025-2026 by Bitten2Up & StarManiaKG.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -29,6 +30,20 @@
 		"gl_ClipVertex = gl_ModelViewMatrix * gl_Vertex;\n" \
 	"}\0"
 
+// replicates the way fixed function lighting is used by the model lighting option,
+// stores the lighting result to gl_Color
+// (ambient lighting of 0.75 and diffuse lighting from above)
+#define GLSL_MODEL_LIGHTING_VERTEX_SHADER \
+	"void main()\n" \
+	"{\n" \
+		"float nDotVP = dot(gl_Normal, vec3(0.0, 1.0, 0.0));\n" \
+		"float light = 0.75 + max(nDotVP, 0.0);\n" \
+		"gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;\n" \
+		"gl_FrontColor = vec4(light, light, light, 1.0);\n" \
+		"gl_TexCoord[0].xy = gl_MultiTexCoord0.xy;\n" \
+		"gl_ClipVertex = gl_ModelViewMatrix * gl_Vertex;\n" \
+	"}\0"
+
 // ==================
 //  Fragment shaders
 // ==================
@@ -42,20 +57,6 @@
 	"uniform vec4 poly_color;\n" \
 	"void main(void) {\n" \
 		"gl_FragColor = texture2D(tex, gl_TexCoord[0].st) * poly_color;\n" \
-	"}\0"
-
-// replicates the way fixed function lighting is used by the model lighting option,
-// stores the lighting result to gl_Color
-// (ambient lighting of 0.75 and diffuse lighting from above)
-#define GLSL_MODEL_LIGHTING_VERTEX_SHADER \
-	"void main()\n" \
-	"{\n" \
-		"float nDotVP = dot(gl_Normal, vec3(0.0, 1.0, 0.0));\n" \
-		"float light = 0.75 + max(nDotVP, 0.0);\n" \
-		"gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;\n" \
-		"gl_FrontColor = vec4(light, light, light, 1.0);\n" \
-		"gl_TexCoord[0].xy = gl_MultiTexCoord0.xy;\n" \
-		"gl_ClipVertex = gl_ModelViewMatrix * gl_Vertex;\n" \
 	"}\0"
 
 //
